@@ -65,36 +65,52 @@ class VaultManager:
         safe_title = "".join(c for c in title if c.isalnum() or c in (" ", "-", "_")).rstrip()
         note_path = target_dir / f"{safe_title}.md"
 
+        # Обробка тегів
         clean_tags = {"ai-generated"}
         for t in data.get("tags", []):
             clean_tags.add(str(t).strip().lower().replace("_", "-").replace("#", ""))
-
+        
         yaml_tags = "\n".join([f"  - {t}" for t in clean_tags])
-        backlinks = data.get("backlinks", [])
-        yaml_backlinks = "\n".join([f'  - "{b}"' if b.startswith("[[") else f'  - "[[{b}]]"' for b in backlinks]) if backlinks else "  []"
 
-        # Очищення вмісту: якщо модель на початку згенерувала заголовок # Title, прибираємо його,
-        # щоб не дублювати з нашим # {title}
+        # Обробка backlinks під потрібний формат (один рядок або список)
+        raw_backlinks = data.get("backlinks", [])
+        if isinstance(raw_backlinks, str):
+            raw_backlinks = [raw_backlinks]
+
+        formatted_links = []
+        for b in raw_backlinks:
+            b_str = str(b).strip()
+            if not b_str.startswith("[["):
+                b_str = f"[[{b_str}]]"
+            formatted_links.append(b_str)
+
+        if len(formatted_links) == 1:
+            yaml_backlinks = f'"{formatted_links[0]}"'
+        elif len(formatted_links) > 1:
+            yaml_backlinks = "\n" + "\n".join([f'  - "{link}"' for link in formatted_links])
+        else:
+            yaml_backlinks = '""'
+
+        # Очищення вмісту від повторного H1
         raw_content = data.get("content", "").strip()
         if raw_content.startswith("# "):
             raw_content = re.sub(r"^#\s+.*?\n+", "", raw_content).strip()
 
-        # Використовуємо textwrap.dedent, щоб прибрати будь-які ліві відступи
-        markdown_body = textwrap.dedent(f"""\
-        ---
-        date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}
-        type: {data.get('type', 'reference')}
-        folder: {folder}
-        tags:
-        {yaml_tags}
-        related_notes:
-        {yaml_backlinks}
-        ---
+        # Збираємо чистий Markdown без f-string indentation
+        now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+        doc_type = data.get('type', 'reference')
 
-        # {title}
-
-        {raw_content}
-        """)
+        markdown_body = (
+            "---\n"
+            f"date: {now_str}\n"
+            f"type: {doc_type}\n"
+            "tags:\n"
+            f"{yaml_tags}\n"
+            f"backlinks: {yaml_backlinks}\n"
+            "---\n\n"
+            f"# {title}\n\n"
+            f"{raw_content}\n"
+        )
 
         with open(note_path, "w", encoding="utf-8") as file:
             file.write(markdown_body)
