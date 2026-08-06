@@ -7,6 +7,8 @@ import asyncio
 import json
 import argparse
 
+CONFIG_PATH = pathlib.Path.home() / ".config" / "obsidian-ai-note"
+CONFIG_FILE = "config.json"
 
 class Config:
     """
@@ -40,8 +42,31 @@ class Config:
             CRITICAL: Return ONLY valid JSON. No markdown code blocks around JSON, no explanations.
         """
 
+    @classmethod
+    def from_dict(cls):
+        file = CONFIG_PATH / CONFIG_FILE
+
+        if not file.exists():
+            console.print(f"[bold red]Config file does not exist at {file}. Using default settings.[/bold red]")
+            return cls()
+
+        with open(file, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+
+        # Ensure all required fields are present in the JSON
+        if not isinstance(config_data, dict):
+            console.print("[bold red]Config file is malformed. Using default settings.[/bold red]")
+            return cls()
+
+        model_name = config_data.get("model_name", "qwen2.5:14b")
+        ollama_url = config_data.get("ollama_url", "http://localhost:11434/api/generate")
+        note_vault_path = pathlib.Path(config_data.get("note_vault", str(pathlib.Path.home() / "Documents" / "obsidian" / "conspects")))
+
+        return cls(model_name, ollama_url, note_vault_path)
+
+
 console = Console()
-config = Config()
+config = Config.from_dict()
 
 async def process_ollama(raw_text: str) -> dict | None:
     try:
@@ -54,23 +79,23 @@ async def process_ollama(raw_text: str) -> dict | None:
                 "temperature": 0.2
             }
         }
-        
+
         async with http.AsyncClient() as client:
             response = await client.post(url=config.ollama_url, timeout=300, json=payload)
             response.raise_for_status()
-            
+
             response_data = response.json()
             raw_json = response_data.get("response", "")
-            
+
             if raw_json:
                 return json.loads(raw_json)
-        
+
         raise Exception('Empty response from Ollama')
-    
+
     except http.HTTPStatusError as error:
         console.print(f"[bold red]HTTP Error:[/bold red]\n time: {datetime.datetime.now()},\n status code: {error.response.status_code},\n reason: {error.response.reason_phrase}")
         return None
-        
+
     except Exception as error:
         console.print(f"[bold red]Exception occurred:[/bold red]\n time: {datetime.datetime.now()},\n error: {error}")
         return None
@@ -81,23 +106,23 @@ def save_note(data: dict) -> pathlib.Path | None:
         return None
 
     config.note_vault.mkdir(parents=True, exist_ok=True)
-    
+
     default_title = f"note_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
     safe_title = "".join(c for c in data.get("title") or default_title if c.isalnum() or c in (" ", "-", "_")).rstrip()
     note_path = config.note_vault / f"{safe_title}.md"
-    
+
     # 1. Формуємо списки тегів із примусовим додаванням ai-generated
     raw_tags = data.get("tags", [])
     clean_tags = ["ai-generated"]  # Гарантуємо наявність ai-generated
-    
+
     for tag in raw_tags:
         formatted = str(tag).strip().lower().replace("_", "-").replace("#", "")
         if formatted and formatted not in clean_tags:
             clean_tags.append(formatted)
-    
+
     # YAML формат для тегів списком (Obsidian ідеально парсить такий формат)
     yaml_tags = "\n".join([f"  - {t}" for t in clean_tags])
-    
+
     # 2. Формуємо валідний YAML Frontmatter (три дефіси строго на початку файла!)
     markdown_body = f"""---
 date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}
@@ -113,20 +138,20 @@ tags:
 
     with open(note_path, 'w', encoding='utf-8') as file:
         file.write(markdown_body)
-        
+
     console.print(f"[bold green]Успішно збережено в Obsidian:[/bold green] {note_path}")
     return note_path
 
 async def main():
     parser = argparse.ArgumentParser(description="Generate detailed Obsidian notes via Ollama.")
     parser.add_argument("topic", nargs="+", help="Topic or prompt for the note")
-    
+
     args = parser.parse_args()
     raw_input_text = " ".join(args.topic)
-    
+
     with console.status(f"[bold green]Опрацьовую тему: '{raw_input_text}'...[/bold green]"):
         note_data = await process_ollama(raw_input_text)
-        
+
     if note_data:
         save_note(note_data)
 
