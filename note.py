@@ -20,7 +20,7 @@ async def main():
     console.print(f"Vault: [yellow]{config.note_vault}[/yellow]")
     console.print(f"Модель: [yellow]{config.model_name}[/yellow]")
 
-    vault_manager = VaultManager(config.note_vault)
+    vault_manager = VaultManager(config.note_vault, config.auto_git)
     llm_client = OllamaClient(url=config.ollama_url, model_name=config.model_name)
     generator = NoteGenerator(llm_client)
 

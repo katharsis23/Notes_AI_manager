@@ -12,11 +12,13 @@ class Config:
         self,
         model_name: str = "qwen2.5:14b",
         ollama_url: str = "http://localhost:11434/api/generate",
-        note_vault: pathlib.Path = pathlib.Path.home() / "Documents" / "obsidian" / "conspects"
+        note_vault: pathlib.Path = pathlib.Path.home() / "Documents" / "obsidian" / "conspects",
+        auto_git: bool = True
     ):
         self.model_name = model_name
         self.ollama_url = ollama_url
         self.note_vault = note_vault
+        self.auto_git = auto_git
         self.system_prompt = """
             You are a JSON ONLY processing model and an expert technical writer.
             The user will give you a topic to write a comprehensive, deep, and detailed note about.
@@ -55,8 +57,8 @@ class Config:
         model_name = config_data.get("model_name", "qwen2.5:14b")
         ollama_url = config_data.get("ollama_url", "http://localhost:11434/api/generate")
         note_vault_path = pathlib.Path(config_data.get("note_vault", str(pathlib.Path.home() / "Documents" / "obsidian" / "conspects")))
-
-        return cls(model_name, ollama_url, note_vault_path)
+        auto_git = config_data.get("auto_git", True)
+        return cls(model_name, ollama_url, note_vault_path, auto_git)
 
 
 config = Config.from_dict()
