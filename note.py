@@ -2,10 +2,10 @@
 import asyncio
 import argparse
 from rich.console import Console
-from config import config
-from vault import VaultManager
-from llm import OllamaClient
-from generator import NoteGenerator
+from config.config import config
+from vault.vault import VaultManager
+from ai.llm import OllamaClient
+from ai.generator import NoteGenerator
 
 console = Console()
 
