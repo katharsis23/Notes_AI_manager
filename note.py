@@ -1,40 +1,102 @@
 #!/usr/bin/env python3
+
 import asyncio
 import argparse
+
 from rich.console import Console
+
 from config.config import config
 from vault.vault import VaultManager
 from ai.llm import OllamaClient
-from ai.generator import NoteGenerator
+from ai.note_pipeline import NotePipeline
+
 
 console = Console()
 
+
 async def main():
-    parser = argparse.ArgumentParser(description="Obsidian Master Note Generator")
-    parser.add_argument("topic", nargs="+", help="Topic or prompt for the note")
+    parser = argparse.ArgumentParser(
+        description="Obsidian Master Note Generator"
+    )
+
+    parser.add_argument(
+        "topic",
+        nargs="+",
+        help="Topic or prompt for the note",
+    )
+
     args = parser.parse_args()
 
-    raw_topic = " ".join(args.topic)
+    raw_topic = " ".join(args.topic).strip()
 
-    console.print("[bold blue]Запуск Obsidian Master...[/bold blue]")
-    console.print(f"Vault: [yellow]{config.note_vault}[/yellow]")
-    console.print(f"Модель: [yellow]{config.model_name}[/yellow]")
+    if not raw_topic:
+        console.print(
+            "[bold red]Помилка: порожній запит.[/bold red]"
+        )
+        return
 
-    vault_manager = VaultManager(config.note_vault, config.auto_git)
-    llm_client = OllamaClient(url=config.ollama_url, model_name=config.model_name)
-    generator = NoteGenerator(llm_client)
+    console.print(
+        "[bold blue]Запуск Obsidian Master...[/bold blue]"
+    )
 
-    # 1. Скануємо індекси волу
-    existing_tags, existing_files = vault_manager.get_existing_context()
-    console.print(f"Знайдено всього тегів: {len(existing_tags)}, нотаток для перелінківки: {len(existing_files)}")
+    console.print(
+        f"Vault: [yellow]{config.note_vault}[/yellow]"
+    )
 
-    # 2. Генеруємо матеріал
-    with console.status(f"[bold green]Генерую розширену нотатку для '{raw_topic}'...[/bold green]"):
-        note_data = await generator.generate_deep_note(raw_topic, existing_tags, existing_files)
+    console.print(
+        f"Модель: [yellow]{config.model_name}[/yellow]"
+    )
 
-    # 3. Зберігаємо нотатку
-    if note_data:
-        vault_manager.save_note(note_data)
+    # ----------------------------------------------------------
+    # Infrastructure
+    # ----------------------------------------------------------
+
+    vault_manager = VaultManager(
+        vault_path=config.note_vault,
+        auto_git=config.auto_git,
+    )
+
+    llm_client = OllamaClient(
+        url=config.ollama_url,
+        model_name=config.model_name,
+    )
+
+    # ----------------------------------------------------------
+    # Pipeline
+    # ----------------------------------------------------------
+
+    pipeline = NotePipeline(
+        llm_client=llm_client,
+        vault_manager=vault_manager,
+        max_revisions=2,
+    )
+
+    # ----------------------------------------------------------
+    # Generate + validate + save
+    # ----------------------------------------------------------
+
+    with console.status(
+        f"[bold green]"
+        f"Генерую нотатку для '{raw_topic}'..."
+        f"[/bold green]"
+    ):
+        note_path = await pipeline.generate_and_save(
+            raw_topic
+        )
+
+    if note_path:
+        console.print(
+            "\n[bold green]"
+            f"✔ Нотатку збережено: {note_path}"
+            "[/bold green]"
+        )
+    else:
+        console.print(
+            "\n[bold red]"
+            "✘ Не вдалося створити нотатку."
+            "[/bold red]"
+        )
+
 
 if __name__ == "__main__":
     asyncio.run(main())

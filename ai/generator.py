@@ -1,3 +1,9 @@
+"""
+    Legacy API for v1 version
+
+    Returns:
+        _type_: _description_
+"""
 import json
 from rich.console import Console
 from ai.llm import OllamaClient

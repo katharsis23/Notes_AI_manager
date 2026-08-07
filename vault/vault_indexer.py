@@ -187,7 +187,8 @@ class VaultIndexer:
         3. Skip unchanged files.
         4. Index new/changed files.
         5. Remove files that no longer exist.
-        6. Resolve WikiLinks between indexed notes.
+        6. Resolve WikiLinks between all indexed notes.
+        7. Cleanup orphan tags.
         """
 
         if not self.vault_path.exists():
@@ -206,6 +207,8 @@ class VaultIndexer:
                 ).fetchall()
             }
 
+            has_changes = False
+
             for relative_path, path in current_files.items():
                 file_hash = self._calculate_hash(path)
 
@@ -221,6 +224,8 @@ class VaultIndexer:
                 if existing is not None and existing["hash"] == file_hash:
                     continue
 
+                has_changes = True
+
                 self._index_file(
                     db=db,
                     path=path,
@@ -235,6 +240,9 @@ class VaultIndexer:
 
             deleted_paths = indexed_paths - set(current_files)
 
+            if deleted_paths:
+                has_changes = True
+
             for deleted_path in deleted_paths:
                 db.execute(
                     """
@@ -243,6 +251,10 @@ class VaultIndexer:
                     """,
                     (deleted_path,),
                 )
+
+            # Оновлюємо зв'язки між нотатками, тільки якщо були зміни у структурі файлів/контенті
+            if has_changes:
+                self._resolve_links(db)
 
             self._cleanup_orphan_tags(db)
 
@@ -834,6 +846,33 @@ class VaultIndexer:
 
         return matches[0]["id"]
 
+
+    def _resolve_links(self, db: sqlite3.Connection) -> None:
+        """
+        Re-evaluate all outgoing WikiLinks for indexed notes.
+
+        This pass runs after all files have been inserted/updated in the DB
+        to ensure links to newly created or renamed notes are resolved properly.
+        """
+        # Зчитуємо контент усіх нотаток для резолюції
+        rows = db.execute(
+            """
+            SELECT note_id, content
+            FROM note_content
+            """
+        ).fetchall()
+
+        for row in rows:
+            source_id = UUID(row["note_id"])
+            body = row["content"]
+            wikilinks = self._extract_wikilinks(body)
+
+            self._replace_note_links(
+                db=db,
+                source_note_id=source_id,
+                wikilinks=wikilinks,
+            )
+    
     # ============================================================
     # HASHING
     # ============================================================
