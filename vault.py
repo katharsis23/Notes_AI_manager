@@ -4,6 +4,7 @@ import pathlib
 import datetime
 from rich.console import Console
 import textwrap
+from git_client import GitClient
 
 
 console = Console()
@@ -11,8 +12,11 @@ console = Console()
 class VaultManager:
     """Відповідає за інспекцію та запис нотаток у Obsidian Vault."""
     
-    def __init__(self, vault_path: pathlib.Path):
+    def __init__(self, vault_path: pathlib.Path, auto_git: bool = True):
         self.vault_path = vault_path
+        self.auto_git = auto_git
+        self.git = GitClient(vault_path=vault_path)
+
 
     def get_existing_context(self, max_tags: int = 50, max_files: int = 100) -> tuple[list[str], list[str]]:
         """Сканує Vault на наявність існуючих MD-файлів та тегів у їхньому YAML frontmatter."""
@@ -116,4 +120,9 @@ class VaultManager:
             file.write(markdown_body)
 
         console.print(f"[bold green]✔ Успішно збережено в Obsidian:[/bold green] {note_path}")
+        if self.auto_git:
+            self.git.commit_and_push(
+                file_path=note_path,
+                commit_message=f"Add {title}"
+            )
         return note_path

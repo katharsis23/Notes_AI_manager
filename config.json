@@ -2,5 +2,6 @@
 {
   "model_name": "qwen2.5:14b",
   "ollama_url": "http://localhost:11434/api/generate",
-  "note_vault": "/home/daniel/Documents/obsidian/conspects"
+  "note_vault": "/home/daniel/Documents/obsidian/conspects",
+  "auto_git": true
 }
