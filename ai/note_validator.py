@@ -161,9 +161,7 @@ The note should be written in natural Ukrainian.
 
 Check for:
 
-- grammatical errors;
 - incorrect word forms;
-- punctuation problems;
 - unnatural constructions;
 - Russianisms;
 - inconsistent terminology;

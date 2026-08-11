@@ -1,13 +1,11 @@
-from rich.console import Console
+import time
 
-from ai.llm import OllamaClient
-from vault.vault import VaultManager
+from rich.console import Console
 
 from ai.note_planner import NotePlanner
 from ai.note_writer import NoteWriter
 from ai.note_validator import NoteValidator
-
-from models import NotePlan, ValidationResult
+from vault.vault import VaultManager
 
 
 console = Console()
@@ -15,54 +13,26 @@ console = Console()
 
 class NotePipeline:
     """
-    Orchestrates the complete note generation pipeline.
+    Orchestrates the complete note generation pipeline:
 
-    Pipeline:
-
-        User Prompt
-             ↓
         Vault Context
-             ↓
-        NotePlanner
-             ↓
-        NotePlan
-             ↓
-        NoteWriter
-             ↓
-        Markdown
-             ↓
-        NoteValidator
-             ↓
-        ┌───────────────┐
-        │               │
-      valid          invalid
-        │               │
-        ▼               ▼
-      Save          Revision
-                        │
-                        ▼
-                     Writer
-                        │
-                        ▼
-                   Validator
-                        │
-                        ▼
-                      Save
-
-    The pipeline itself does not implement:
-    - LLM communication;
-    - Vault indexing;
-    - Markdown generation;
-    - validation logic;
-    - file persistence;
-    - Git operations.
+            ↓
+        Note Planner
+            ↓
+        Note Writer
+            ↓
+        Note Validator
+            ↓
+        Optional Revision
+            ↓
+        Save to Vault
     """
 
     def __init__(
         self,
-        llm_client: OllamaClient,
+        llm_client,
         vault_manager: VaultManager,
-        max_revisions: int = 2,
+        max_revisions: int = 1,
     ):
         self.llm = llm_client
         self.vault = vault_manager
@@ -80,112 +50,108 @@ class NotePipeline:
             llama_client=llm_client,
         )
 
-        self.max_revisions = max_revisions
+        # Навмисно обмежуємо revision одним проходом.
+        self.max_revisions = min(max_revisions, 1)
 
-    async def generate(
-        self,
-        raw_text: str,
-    ) -> dict | None:
+    # ------------------------------------------------------------------
+    # Timing
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _log_duration(stage: str, started_at: float) -> float:
+        elapsed = time.perf_counter() - started_at
+
+        console.print(
+            f"  └─ [dim]{stage}: {elapsed:.2f}s[/dim]"
+        )
+
+        return elapsed
+
+    # ------------------------------------------------------------------
+    # Validation policy
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _requires_revision(validation_result) -> bool:
         """
-        Execute the complete note-generation pipeline.
+        Revision запускається тільки якщо Validator знайшов
+        серйозну проблему.
 
-        Args:
-            raw_text:
-                Original user request.
-
-        Returns:
-            Note data ready for VaultManager.save_note(),
-            or None if generation failed.
+        minor → тільки фіксуємо
+        major / critical → revision
         """
 
-        if not raw_text or not raw_text.strip():
-            console.print(
-                "[bold red]Помилка:[/bold red] "
-                "Порожній запит."
-            )
-            return None
-
-        raw_text = raw_text.strip()
-
-        console.print(
-            "\n[bold cyan]══════════════════════════════════════[/bold cyan]"
-        )
-        console.print(
-            "[bold cyan]       OBSIDIAN NOTE PIPELINE[/bold cyan]"
-        )
-        console.print(
-            "[bold cyan]══════════════════════════════════════[/bold cyan]\n"
+        return any(
+            issue.severity.lower() in {"major", "critical"}
+            for issue in validation_result.issues
         )
 
-        # ==========================================================
-        # 1. CONTEXT
-        # ==========================================================
+    # ------------------------------------------------------------------
+    # Main pipeline
+    # ------------------------------------------------------------------
+
+    async def generate(self, raw_text: str):
+        pipeline_started = time.perf_counter()
 
         console.print(
-            "[bold blue][1/5] Збір контексту Vault...[/bold blue]"
+            "\n[bold blue]━━━ Note Generation Pipeline ━━━[/bold blue]"
+        )
+
+        # --------------------------------------------------------------
+        # 1. Vault context
+        # --------------------------------------------------------------
+
+        stage_started = time.perf_counter()
+
+        console.print(
+            "  ├─ [cyan]Отримання контексту Vault...[/cyan]"
         )
 
         context = self.vault.get_existing_context_v2()
 
-        if context is None:
-            console.print(
-                "[bold red]Не вдалося отримати контекст Vault.[/bold red]"
-            )
-            return None
-
-        console.print(
-            f"  └─ Нотаток: {len(context.notes)}"
-        )
-        console.print(
-            f"  └─ Тегів: {len(context.tags)}"
+        context_time = self._log_duration(
+            "Vault context",
+            stage_started,
         )
 
-        # ==========================================================
-        # 2. PLANNER
-        # ==========================================================
+        console.print(
+            f"  │  [dim]Нотаток: {len(context.notes)}, "
+            f"тегів: {len(context.tags)}[/dim]"
+        )
+
+        # --------------------------------------------------------------
+        # 2. Planner
+        # --------------------------------------------------------------
+
+        stage_started = time.perf_counter()
 
         console.print(
-            "\n[bold blue][2/5] Планування нотатки...[/bold blue]"
+            "  ├─ [cyan]Побудова плану нотатки...[/cyan]"
         )
 
         plan = await self.planner.generate_plan(
             raw_text=raw_text,
         )
 
-        if plan is None:
+        self._log_duration(
+            "Planner",
+            stage_started,
+        )
+
+        if not plan:
             console.print(
-                "[bold red]Planner не зміг створити план.[/bold red]"
+                "[bold red]✘ Planner не зміг створити план.[/bold red]"
             )
             return None
 
-        console.print(
-            f"  └─ Title: [bold]{plan.title}[/bold]"
-        )
-        console.print(
-            f"  └─ Type: {plan.type}"
-        )
-        console.print(
-            f"  └─ Sections: {len(plan.outline)}"
-        )
-        console.print(
-            f"  └─ Backlinks: {len(plan.backlinks)}"
-        )
+        # --------------------------------------------------------------
+        # 3. Writer
+        # --------------------------------------------------------------
 
-        if plan.diagram.needed:
-            console.print(
-                f"  └─ Diagram: {plan.diagram.type}"
-            )
-        else:
-            console.print(
-                "  └─ Diagram: не потрібна"
-            )
-
-        # ==========================================================
-        # 3. WRITER
-        # ==========================================================
+        stage_started = time.perf_counter()
 
         console.print(
-            "\n[bold blue][3/5] Генерація нотатки...[/bold blue]"
+            "  ├─ [cyan]Генерація вмісту нотатки...[/cyan]"
         )
 
         content = await self.writer.generate_content(
@@ -193,22 +159,25 @@ class NotePipeline:
             context=context,
         )
 
+        self._log_duration(
+            "Writer",
+            stage_started,
+        )
+
         if not content:
             console.print(
-                "[bold red]Writer не зміг згенерувати нотатку.[/bold red]"
+                "[bold red]✘ Writer не зміг створити вміст.[/bold red]"
             )
             return None
 
-        console.print(
-            f"  └─ Згенеровано символів: {len(content)}"
-        )
+        # --------------------------------------------------------------
+        # 4. Validation
+        # --------------------------------------------------------------
 
-        # ==========================================================
-        # 4. VALIDATION + REVISION
-        # ==========================================================
+        stage_started = time.perf_counter()
 
         console.print(
-            "\n[bold blue][4/5] Валідація нотатки...[/bold blue]"
+            "  ├─ [cyan]Валідація нотатки...[/cyan]"
         )
 
         validation = await self.validator.validate(
@@ -218,49 +187,63 @@ class NotePipeline:
             context=context,
         )
 
+        self._log_duration(
+            "Validator",
+            stage_started,
+        )
+
         if validation is None:
             console.print(
-                "[bold red]Validator не зміг перевірити нотатку.[/bold red]"
+                "[yellow]⚠ Validator не повернув результат.[/yellow]"
             )
-            return None
+        else:
+            console.print(
+                f"  │  [dim]Score: "
+                f"{validation.score:.2f} | "
+                f"Issues: {len(validation.issues)}[/dim]"
+            )
+
+        # --------------------------------------------------------------
+        # 5. Optional revision
+        # --------------------------------------------------------------
 
         revision_count = 0
 
-        while (
-            not validation.valid
+        if (
+            validation
+            and self._requires_revision(validation)
             and revision_count < self.max_revisions
         ):
             revision_count += 1
 
             console.print(
-                f"\n[yellow]⚠ Нотатка не пройшла валідацію "
-                f"(спроба {revision_count}/{self.max_revisions}).[/yellow]"
+                "\n  ├─ [yellow]"
+                "Виявлено серйозні проблеми → revision..."
+                "[/yellow]"
             )
 
-            self._print_validation_result(
-                validation
-            )
+            stage_started = time.perf_counter()
 
-            console.print(
-                "[cyan]→ Передаємо проблеми Writer для виправлення...[/cyan]"
-            )
-
-            content = await self._revise_content(
-                raw_text=raw_text,
+            content = await self.writer.revise(
                 plan=plan,
                 content=content,
                 validation=validation,
                 context=context,
             )
 
-            if not content:
-                console.print(
-                    "[bold red]Не вдалося виконати revision.[/bold red]"
-                )
-                return None
+            self._log_duration(
+                "Revision",
+                stage_started,
+            )
+
+            # ----------------------------------------------------------
+            # 6. Re-validation
+            # ----------------------------------------------------------
+
+            stage_started = time.perf_counter()
 
             console.print(
-                "[cyan]→ Повторна валідація...[/cyan]"
+                "  ├─ [cyan]Повторна валідація...[/cyan]"
             )
 
             validation = await self.validator.validate(
@@ -270,185 +253,41 @@ class NotePipeline:
                 context=context,
             )
 
-            if validation is None:
-                console.print(
-                    "[bold red]Validator завершився з помилкою.[/bold red]"
-                )
-                return None
-
-        # ==========================================================
-        # VALIDATION RESULT
-        # ==========================================================
-
-        self._print_validation_result(
-            validation
-        )
-
-        if not validation.valid:
-            console.print(
-                "\n[bold red]"
-                "✘ Нотатка не пройшла валідацію після "
-                f"{self.max_revisions} revision."
-                "[/bold red]"
+            self._log_duration(
+                "Final validation",
+                stage_started,
             )
 
-            return None
+        elif validation:
+            console.print(
+                "  ├─ [green]"
+                "Revision не потрібна."
+                "[/green]"
+            )
 
-        # ==========================================================
-        # 5. PREPARE DATA FOR VAULT
-        # ==========================================================
+        # --------------------------------------------------------------
+        # 7. Build result
+        # --------------------------------------------------------------
+
+        total_time = time.perf_counter() - pipeline_started
 
         console.print(
-            "\n[bold blue][5/5] Підготовка до збереження...[/bold blue]"
-        )
-
-        note_data = self._build_note_data(
-            plan=plan,
-            content=content,
-            validation=validation,
+            "\n[bold blue]━━━ Pipeline Summary ━━━[/bold blue]"
         )
 
         console.print(
-            "[green]✔ Нотатка готова до збереження.[/green]"
+            f"  Total: [yellow]{total_time:.2f}s[/yellow]"
         )
 
-        return note_data
-
-    async def generate_and_save(
-        self,
-        raw_text: str,
-    ):
-        """
-        Generate, validate and save the note.
-
-        This is a convenience method for CLI usage.
-        """
-
-        note_data = await self.generate(
-            raw_text
+        console.print(
+            f"  Revision count: [yellow]{revision_count}[/yellow]"
         )
 
-        if note_data is None:
-            return None
-
-        return self.vault.save_note(
-            note_data
-        )
-
-    async def _revise_content(
-        self,
-        raw_text: str,
-        plan: NotePlan,
-        content: str,
-        validation: ValidationResult,
-        context,
-    ) -> str | None:
-        """
-        Ask Writer to fix the problems found by Validator.
-
-        We deliberately use a separate revision prompt instead of
-        changing NoteWriter.generate_content().
-
-        This keeps initial generation and correction conceptually
-        separate.
-        """
-
-        issues = self._format_validation_issues(
-            validation
-        )
-
-        prompt = f"""
-You are revising an existing Obsidian knowledge-base note.
-
-The note was generated according to a predefined plan and then
-validated by a strict quality-control system.
-
-Your task is to FIX ONLY the identified problems while preserving
-correct existing content.
-
-==================================================
-ORIGINAL USER REQUEST
-==================================================
-
-{raw_text}
-
-==================================================
-NOTE PLAN
-==================================================
-
-Title:
-{plan.title}
-
-Type:
-{plan.type}
-
-Sections:
-
-{self._format_plan_sections(plan)}
-
-==================================================
-CURRENT NOTE
-==================================================
-
-{content}
-
-==================================================
-VALIDATION ISSUES
-==================================================
-
-{issues}
-
-==================================================
-REVISION RULES
-==================================================
-
-1. Fix every critical and major issue.
-2. Fix minor issues when they are straightforward.
-3. Do not remove correct information merely to avoid validation.
-4. Do not change the intended topic.
-5. Do not redesign the note structure.
-6. Do not invent unsupported facts.
-7. Preserve useful WikiLinks.
-8. Do not introduce WikiLinks to unknown notes.
-9. Preserve Mermaid diagrams when they are correct.
-10. Fix Mermaid diagrams if the validator identified a problem.
-11. Keep the note in Ukrainian.
-12. Keep the note information-dense.
-13. Do not add YAML frontmatter.
-14. Do not add a top-level "# Title" heading.
-
-Return ONLY the corrected raw Markdown.
-
-Start directly with:
-
-## ...
-"""
-
-        try:
-            return (
-                await self.llm.query(
-                    prompt,
-                    is_json=False,
-                    temperature=0.2,
-                )
-            ).strip()
-
-        except Exception as exc:
+        if validation:
             console.print(
-                f"[bold red]Revision error:[/bold red] {exc}"
+                f"  Validation score: "
+                f"[yellow]{validation.score:.2f}[/yellow]"
             )
-            return None
-
-    @staticmethod
-    def _build_note_data(
-        plan: NotePlan,
-        content: str,
-        validation: ValidationResult,
-    ) -> dict:
-        """
-        Convert pipeline result into the structure expected
-        by VaultManager.save_note().
-        """
 
         return {
             "title": plan.title,
@@ -457,103 +296,30 @@ Start directly with:
             "tags": plan.tags,
             "backlinks": plan.backlinks,
             "content": content,
-            "validation": {
-                "valid": validation.valid,
-                "score": validation.score,
-                "recommendation": validation.recommendation,
-            },
+            "validation": validation,
         }
 
-    @staticmethod
-    def _format_validation_issues(
-        validation: ValidationResult,
-    ) -> str:
-        if not validation.issues:
-            return "No issues."
+    # ------------------------------------------------------------------
+    # Generate + save
+    # ------------------------------------------------------------------
 
-        result = []
+    async def generate_and_save(self, raw_text: str):
+        data = await self.generate(raw_text)
 
-        for index, issue in enumerate(
-            validation.issues,
-            start=1,
-        ):
-            section = (
-                issue.section
-                if issue.section
-                else "document-wide"
-            )
+        if not data:
+            return None
 
-            result.append(
-                f"""
-{index}. [{issue.severity.upper()}]
-Type: {issue.type}
-Section: {section}
-Problem: {issue.description}
-""".strip()
-            )
+        stage_started = time.perf_counter()
 
-        return "\n\n".join(
-            result
+        console.print(
+            "\n  └─ [cyan]Збереження нотатки у Vault...[/cyan]"
         )
 
-    @staticmethod
-    def _format_plan_sections(
-        plan: NotePlan,
-    ) -> str:
-        result = []
+        note_path = self.vault.save_note(data)
 
-        for index, section in enumerate(
-            plan.outline,
-            start=1,
-        ):
-            result.append(
-                f"""
-{index}. {section.title}
-
-Purpose:
-{section.purpose}
-
-Elements:
-{", ".join(section.elements)}
-""".strip()
-            )
-
-        return "\n\n".join(
-            result
+        self._log_duration(
+            "Save",
+            stage_started,
         )
 
-    @staticmethod
-    def _print_validation_result(
-        validation: ValidationResult,
-    ):
-        score = validation.score
-
-        if validation.valid:
-            console.print(
-                f"[bold green]✔ Validation passed "
-                f"({score:.1f}/10)[/bold green]"
-            )
-        else:
-            console.print(
-                f"[bold red]✘ Validation failed "
-                f"({score:.1f}/10)[/bold red]"
-            )
-
-        if validation.issues:
-            console.print(
-                f"  └─ Issues: {len(validation.issues)}"
-            )
-
-            for issue in validation.issues:
-                severity = issue.severity.upper()
-
-                console.print(
-                    f"     [{severity}] "
-                    f"{issue.type}: "
-                    f"{issue.description}"
-                )
-
-        if validation.recommendation:
-            console.print(
-                f"  └─ {validation.recommendation}"
-            )
+        return note_path
