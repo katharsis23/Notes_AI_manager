@@ -12,14 +12,13 @@ class OllamaClient:
             "stream": False,
             "options": {
                 "temperature": temperature,
-                "num_ctx": 4096,        # Зменшено з 8192 для істотного прискорення prefill
+                "num_ctx": 4096,
                 "num_predict": 2560
             }
         }
         if is_json:
             payload["format"] = "json"
 
-        # Налаштовуємо окремі таймаути: connect — швидко, read — розширено
         timeout_config = http.Timeout(600.0, connect=15.0)
 
         async with http.AsyncClient(timeout=timeout_config) as client:

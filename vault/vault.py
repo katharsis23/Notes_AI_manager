@@ -1,10 +1,11 @@
-import os
-import re
-import pathlib
 import datetime
-from rich.console import Console
+import os
+import pathlib
+import re
+
 from git_client import GitClient
 from models import VaultContext, VaultNote
+from rich.console import Console
 from vault.vault_indexer import VaultIndexer
 
 console = Console()
@@ -12,16 +13,14 @@ console = Console()
 
 class VaultManager:
     """
-    Відповідає за роботу з Obsidian Vault.
+    Manages operations on the Obsidian Vault.
 
     Responsibilities:
-    - файлові операції з Vault;
-    - збереження Markdown-нот;
-    - Git integration;
-    - отримання контексту Vault;
-    - інтеграція з локальним SQLite index.
-
-    SQLite та індексація делегуються VaultIndexer.
+    - File I/O for Markdown notes
+    - YAML Frontmatter formatting and file persistence
+    - Git version control integration
+    - Providing Vault context to the LLM generation pipeline
+    - SQLite index synchronization via VaultIndexer
     """
 
     def __init__(
@@ -32,14 +31,8 @@ class VaultManager:
         self.vault_path = vault_path.resolve()
         self.auto_git = auto_git
 
-        self.git = GitClient(
-            vault_path=self.vault_path
-        )
-
-        # SQLite index є похідним від Markdown Vault.
-        self.indexer = VaultIndexer(
-            vault_path=self.vault_path
-        )
+        self.git = GitClient(vault_path=self.vault_path)
+        self.indexer = VaultIndexer(vault_path=self.vault_path)
 
     # ============================================================
     # LEGACY CONTEXT
@@ -51,12 +44,10 @@ class VaultManager:
         max_files: int = 100,
     ) -> tuple[list[str], list[str]]:
         """
-        Старий механізм отримання контексту.
+        Legacy method for retrieving Vault context directly from the filesystem.
 
-        НЕ ВИДАЛЯЄМО.
-
-        Залишається для backward compatibility та можливості
-        поступового переходу на SQLite index.
+        Kept for backward compatibility and incremental transition
+        to the SQLite index.
         """
 
         existing_tags = {"ai-generated"}
@@ -65,9 +56,7 @@ class VaultManager:
         if not self.vault_path.exists():
             return list(existing_tags), existing_files
 
-        tag_regex = re.compile(
-            r"^\s*-\s*([a-zA-Z0-9_\-]+)"
-        )
+        tag_regex = re.compile(r"^\s*-\s*([a-zA-Z0-9_\-]+)")
 
         for root, _, files in os.walk(self.vault_path):
             for file in files:
@@ -100,9 +89,7 @@ class VaultManager:
                                 match = tag_regex.match(line)
 
                                 if match:
-                                    existing_tags.add(
-                                        match.group(1).lower()
-                                    )
+                                    existing_tags.add(match.group(1).lower())
 
                 except Exception:
                     print("Error occurred while reading file.")
@@ -121,7 +108,7 @@ class VaultManager:
         sync: bool = True,
     ) -> VaultContext:
         """
-        Get Vault context from the SQLite index.
+        Retrieve Vault context directly from the SQLite index.
 
         Pipeline:
 
@@ -133,8 +120,8 @@ class VaultManager:
                   ↓
             VaultContext
 
-        The returned VaultContext is intentionally lightweight
-        and suitable for passing into the AI generation pipeline.
+        Returns a lightweight VaultContext instance suitable for
+        the AI generation pipeline.
         """
 
         if sync:
@@ -145,27 +132,19 @@ class VaultManager:
         vault_notes: list[VaultNote] = []
 
         for metadata in metadata_list:
-            tags = self.indexer.get_note_tags(
-                metadata.id
-            )
+            tags = self.indexer.get_note_tags(metadata.id)
 
             vault_notes.append(
                 VaultNote(
                     name=metadata.name,
                     path=metadata.path,
-                    tags=[
-                        tag.name
-                        for tag in tags
-                    ],
+                    tags=[tag.name for tag in tags],
                     type=metadata.type,
                 )
             )
 
         vault_tags = sorted(
-            {
-                tag.name
-                for tag in self.indexer.get_tags()
-            }
+            {tag.name for tag in self.indexer.get_tags()}
         )
 
         return VaultContext(
@@ -182,23 +161,17 @@ class VaultManager:
         data: dict,
     ) -> pathlib.Path | None:
         """
-        Save generated note into the Vault.
+        Save the generated note into the Vault as a Markdown file.
 
-        After saving the Markdown file, the SQLite index is updated.
+        Constructs YAML Frontmatter, formats content, writes to disk,
+        updates the SQLite index, and optionally commits to Git.
         """
 
         if not data:
             return None
 
-        folder = data.get(
-            "folder",
-            "Inbox",
-        ).strip("/")
-
-        target_dir = (
-            self.vault_path / folder
-        )
-
+        folder = data.get("folder", "Inbox").strip("/")
+        target_dir = self.vault_path / folder
         target_dir.mkdir(
             parents=True,
             exist_ok=True,
@@ -209,35 +182,21 @@ class VaultManager:
             f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
         )
 
-        title = (
-            data.get("title")
-            or default_title
-        ).strip()
+        title = (data.get("title") or default_title).strip()
 
         safe_title = "".join(
-            c
-            for c in title
-            if c.isalnum()
-            or c in (" ", "-", "_")
+            c for c in title if c.isalnum() or c in (" ", "-", "_")
         ).rstrip()
 
-        note_path = (
-            target_dir
-            / f"{safe_title}.md"
-        )
+        note_path = target_dir / f"{safe_title}.md"
 
         # ========================================================
         # TAGS
         # ========================================================
 
-        clean_tags = {
-            "ai-generated"
-        }
+        clean_tags = {"ai-generated"}
 
-        for tag in data.get(
-            "tags",
-            [],
-        ):
+        for tag in data.get("tags", []):
             clean_tags.add(
                 str(tag)
                 .strip()
@@ -246,34 +205,21 @@ class VaultManager:
                 .replace("#", "")
             )
 
-        yaml_tags = "\n".join(
-            f"  - {tag}"
-            for tag in clean_tags
-        )
+        yaml_tags = "\n".join(f"  - {tag}" for tag in clean_tags)
 
         # ========================================================
         # BACKLINKS
         # ========================================================
 
-        raw_backlinks = data.get(
-            "backlinks",
-            [],
-        )
+        raw_backlinks = data.get("backlinks", [])
 
-        if isinstance(
-            raw_backlinks,
-            str,
-        ):
-            raw_backlinks = [
-                raw_backlinks
-            ]
+        if isinstance(raw_backlinks, str):
+            raw_backlinks = [raw_backlinks]
 
         formatted_links = []
 
         for backlink in raw_backlinks:
-            link = str(
-                backlink
-            ).strip()
+            link = str(backlink).strip()
 
             if not link:
                 continue
@@ -284,17 +230,11 @@ class VaultManager:
             formatted_links.append(link)
 
         if len(formatted_links) == 1:
-            yaml_backlinks = (
-                f'"{formatted_links[0]}"'
-            )
+            yaml_backlinks = f'"{formatted_links[0]}"'
 
         elif len(formatted_links) > 1:
-            yaml_backlinks = (
-                "\n"
-                + "\n".join(
-                    f'  - "{link}"'
-                    for link in formatted_links
-                )
+            yaml_backlinks = "\n" + "\n".join(
+                f'  - "{link}"' for link in formatted_links
             )
 
         else:
@@ -304,15 +244,9 @@ class VaultManager:
         # CONTENT
         # ========================================================
 
-        raw_content = (
-            data.get(
-                "content",
-                "",
-            )
-            .strip()
-        )
+        raw_content = data.get("content", "").strip()
 
-        # Видаляємо H1, якщо модель його випадково створила.
+        # Strip redundant H1 heading if generated by the LLM
         if raw_content.startswith("# "):
             raw_content = re.sub(
                 r"^#\s+.*?\n+",
@@ -320,14 +254,8 @@ class VaultManager:
                 raw_content,
             ).strip()
 
-        now_str = datetime.datetime.now().strftime(
-            "%Y-%m-%d %H:%M"
-        )
-
-        doc_type = data.get(
-            "type",
-            "reference",
-        )
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        doc_type = data.get("type", "reference")
 
         markdown_body = (
             "---\n"
@@ -345,28 +273,18 @@ class VaultManager:
         # WRITE
         # ========================================================
 
-        with open(
-            note_path,
-            "w",
-            encoding="utf-8",
-        ) as file:
-            file.write(
-                markdown_body
-            )
+        with open(note_path, "w", encoding="utf-8") as file:
+            file.write(markdown_body)
 
         console.print(
-            "[bold green]"
-            "✔ Успішно збережено в Obsidian:"
-            "[/bold green] "
-            f"{note_path}"
+            f"[bold green]✔ Saved to Obsidian Vault:[/bold green] {note_path}"
         )
 
         # ========================================================
         # INDEX
         # ========================================================
 
-        # Не обов'язково робити повний sync.
-        # Але поки що це найнадійніший варіант.
+        # Trigger index update to reflect the newly created file
         self.indexer.sync()
 
         # ========================================================
@@ -380,4 +298,3 @@ class VaultManager:
             )
 
         return note_path
-

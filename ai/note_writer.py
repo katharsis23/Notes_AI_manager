@@ -119,13 +119,6 @@ The note should be:
 
 Avoid generic introductory prose.
 
-Do NOT write phrases such as:
-
-"У цьому розділі ми розглянемо..."
-"У сучасному світі..."
-"Важливо зазначити..."
-"Як відомо..."
-
 Unless the phrase introduces actual useful information.
 
 Every paragraph should communicate concrete information.

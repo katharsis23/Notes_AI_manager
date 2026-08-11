@@ -252,7 +252,7 @@ class VaultIndexer:
                     (deleted_path,),
                 )
 
-            # Оновлюємо зв'язки між нотатками, тільки якщо були зміни у структурі файлів/контенті
+            # Hot reloading file relationship in case of changes
             if has_changes:
                 self._resolve_links(db)
 
@@ -854,7 +854,7 @@ class VaultIndexer:
         This pass runs after all files have been inserted/updated in the DB
         to ensure links to newly created or renamed notes are resolved properly.
         """
-        # Зчитуємо контент усіх нотаток для резолюції
+        # Reading the context for resolution
         rows = db.execute(
             """
             SELECT note_id, content

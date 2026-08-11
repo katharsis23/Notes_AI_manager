@@ -31,12 +31,12 @@ async def main():
 
     if not raw_topic:
         console.print(
-            "[bold red]Помилка: порожній запит.[/bold red]"
+            "[bold red]Error: Empty prompt.[/bold red]"
         )
         return
 
     console.print(
-        "[bold blue]Запуск Obsidian Master...[/bold blue]"
+        "[bold blue]Starting Obsidian Master...[/bold blue]"
     )
 
     console.print(
@@ -77,7 +77,7 @@ async def main():
 
     with console.status(
         f"[bold green]"
-        f"Генерую нотатку для '{raw_topic}'..."
+        f"Generating note for '{raw_topic}'..."
         f"[/bold green]"
     ):
         note_path = await pipeline.generate_and_save(
@@ -87,13 +87,13 @@ async def main():
     if note_path:
         console.print(
             "\n[bold green]"
-            f"✔ Нотатку збережено: {note_path}"
+            f"✔ Note saved: {note_path}"
             "[/bold green]"
         )
     else:
         console.print(
             "\n[bold red]"
-            "✘ Не вдалося створити нотатку."
+            "✘ Failed to save the note."
             "[/bold red]"
         )
 

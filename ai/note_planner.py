@@ -181,15 +181,6 @@ unless these sections have a specific informational purpose.
 
 Every section must explain WHAT information it should contain.
 
-Prefer:
-
-"Механізм роботи — покроково пояснити lifecycle запиту,
-взаємодію компонентів та точки, де може виникнути блокування"
-
-over:
-
-"Механізм роботи"
-
 The outline should form a logical progression of understanding.
 
 ==================================================

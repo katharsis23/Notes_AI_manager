@@ -1,8 +1,5 @@
 """
     Legacy API for v1 version
-
-    Returns:
-        _type_: _description_
 """
 import json
 from rich.console import Console
@@ -22,7 +19,7 @@ class NoteGenerator:
         existing_files: list[str],
     ) -> dict | None:
 
-        # ЕТАП 1: Метадані, вибір тегів, перелінковка та архітектура нотатки
+        # STEP 1: Metadata, tags, linking
         step1_prompt = f"""
 You are an expert knowledge architect designing a high-quality personal
 knowledge-base note for Obsidian.
@@ -206,7 +203,7 @@ Return ONLY valid JSON.
 
         try:
             console.print(
-                "  └─ [cyan]Етап 1:[/cyan] Побудова плану та вибір метаданих..."
+                "  └─ [cyan]Етап 1:[/cyan] Plan writing and gathering metadata..."
             )
 
             raw_plan = await self.llm.query(
@@ -219,19 +216,19 @@ Return ONLY valid JSON.
 
         except Exception as e:
             console.print(
-                f"[bold red]Помилка генерації плану (Етап 1):[/bold red] {e}"
+                f"[bold red]Error during plan writing:[/bold red] {e}"
             )
             return None
 
 
-        # ЕТАП 2: Генерація повного вмісту нотатки за ОДИН запит
+        # STEP 2: Content Generation
         outline_items = []
         raw_outline = plan_data.get("outline", [])
 
         if isinstance(raw_outline, list):
             for item in raw_outline:
                 if isinstance(item, dict):
-                    title = item.get("title", "Розділ")
+                    title = item.get("title", "Title")
                     purpose = item.get("purpose", "")
                     raw_elements = item.get("elements", [])
                     
@@ -244,9 +241,9 @@ Return ONLY valid JSON.
                 elif isinstance(item, str):
                     outline_items.append(f"- {item}")
 
-        outline_str = "\n".join(outline_items) if outline_items else "Автоматична структура за темою"
+        outline_str = "\n".join(outline_items) if outline_items else "Automatic structure"
 
-        # Безпечне формування backlinks
+        # Backlinks
         raw_backlinks = plan_data.get("backlinks", [])
         if isinstance(raw_backlinks, list):
             backlinks_str = ", ".join(f"[[{b}]]" for b in raw_backlinks if isinstance(b, str))
@@ -536,7 +533,7 @@ Do not wrap the entire answer in a Markdown code block.
 """
 
         console.print(
-            "  └─ [cyan]Етап 2:[/cyan] Генерація повного тексту нотатки..."
+            "  └─ [cyan]Етап 2:[/cyan] Content generation"
         )
 
         try:
@@ -552,7 +549,7 @@ Do not wrap the entire answer in a Markdown code block.
 
         except Exception as e:
             console.print(
-                f"[bold red]Помилка генерації вмісту (Етап 2):[/bold red] {e}"
+                f"[bold red]Failed to generate content[/bold red] {e}"
             )
             return None
 

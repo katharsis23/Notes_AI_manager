@@ -50,7 +50,7 @@ class NotePipeline:
             llama_client=llm_client,
         )
 
-        # Навмисно обмежуємо revision одним проходом.
+        # Intentionally cap revisions at a single pass.
         self.max_revisions = min(max_revisions, 1)
 
     # ------------------------------------------------------------------
@@ -74,11 +74,11 @@ class NotePipeline:
     @staticmethod
     def _requires_revision(validation_result) -> bool:
         """
-        Revision запускається тільки якщо Validator знайшов
-        серйозну проблему.
+        Revision is triggered only if the Validator finds
+        a major or critical issue.
 
-        minor → тільки фіксуємо
-        major / critical → revision
+        minor → record only
+        major / critical → trigger revision
         """
 
         return any(
@@ -104,7 +104,7 @@ class NotePipeline:
         stage_started = time.perf_counter()
 
         console.print(
-            "  ├─ [cyan]Отримання контексту Vault...[/cyan]"
+            "  ├─ [cyan]Fetching Vault context...[/cyan]"
         )
 
         context = self.vault.get_existing_context_v2()
@@ -115,8 +115,8 @@ class NotePipeline:
         )
 
         console.print(
-            f"  │  [dim]Нотаток: {len(context.notes)}, "
-            f"тегів: {len(context.tags)}[/dim]"
+            f"  │  [dim]Notes: {len(context.notes)}, "
+            f"tags: {len(context.tags)}[/dim]"
         )
 
         # --------------------------------------------------------------
@@ -126,7 +126,7 @@ class NotePipeline:
         stage_started = time.perf_counter()
 
         console.print(
-            "  ├─ [cyan]Побудова плану нотатки...[/cyan]"
+            "  ├─ [cyan]Building note plan...[/cyan]"
         )
 
         plan = await self.planner.generate_plan(
@@ -140,7 +140,7 @@ class NotePipeline:
 
         if not plan:
             console.print(
-                "[bold red]✘ Planner не зміг створити план.[/bold red]"
+                "[bold red]✘ Planner failed to generate a plan.[/bold red]"
             )
             return None
 
@@ -151,7 +151,7 @@ class NotePipeline:
         stage_started = time.perf_counter()
 
         console.print(
-            "  ├─ [cyan]Генерація вмісту нотатки...[/cyan]"
+            "  ├─ [cyan]Generating note content...[/cyan]"
         )
 
         content = await self.writer.generate_content(
@@ -166,7 +166,7 @@ class NotePipeline:
 
         if not content:
             console.print(
-                "[bold red]✘ Writer не зміг створити вміст.[/bold red]"
+                "[bold red]✘ Writer failed to generate content.[/bold red]"
             )
             return None
 
@@ -177,7 +177,7 @@ class NotePipeline:
         stage_started = time.perf_counter()
 
         console.print(
-            "  ├─ [cyan]Валідація нотатки...[/cyan]"
+            "  ├─ [cyan]Validating note...[/cyan]"
         )
 
         validation = await self.validator.validate(
@@ -194,7 +194,7 @@ class NotePipeline:
 
         if validation is None:
             console.print(
-                "[yellow]⚠ Validator не повернув результат.[/yellow]"
+                "[yellow]⚠ Validator returned no result.[/yellow]"
             )
         else:
             console.print(
@@ -218,7 +218,7 @@ class NotePipeline:
 
             console.print(
                 "\n  ├─ [yellow]"
-                "Виявлено серйозні проблеми → revision..."
+                "Major issues detected → starting revision..."
                 "[/yellow]"
             )
 
@@ -243,7 +243,7 @@ class NotePipeline:
             stage_started = time.perf_counter()
 
             console.print(
-                "  ├─ [cyan]Повторна валідація...[/cyan]"
+                "  ├─ [cyan]Re-validating note...[/cyan]"
             )
 
             validation = await self.validator.validate(
@@ -261,7 +261,7 @@ class NotePipeline:
         elif validation:
             console.print(
                 "  ├─ [green]"
-                "Revision не потрібна."
+                "Revision not required."
                 "[/green]"
             )
 
@@ -312,7 +312,7 @@ class NotePipeline:
         stage_started = time.perf_counter()
 
         console.print(
-            "\n  └─ [cyan]Збереження нотатки у Vault...[/cyan]"
+            "\n  └─ [cyan]Saving note to Vault...[/cyan]"
         )
 
         note_path = self.vault.save_note(data)
