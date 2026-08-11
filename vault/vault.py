@@ -248,7 +248,7 @@ class VaultManager:
 
         yaml_tags = "\n".join(
             f"  - {tag}"
-            for tag in reversed(clean_tags)
+            for tag in clean_tags
         )
 
         # ========================================================
