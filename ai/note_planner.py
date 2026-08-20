@@ -111,7 +111,7 @@ POTENTIALLY RELATED VAULT NOTES
 
 {existing_files}
 
-The final note will be written in Ukrainian.
+The final note will be written in English.
 
 ==================================================
 PRIMARY GOAL
@@ -272,7 +272,7 @@ RETURN FORMAT
 Return STRICTLY valid JSON and nothing else:
 
 {{
-    "title": "Clear and descriptive Ukrainian title",
+    "title": "Clear and descriptive English title",
     "type": "concept",
     "folder": "Concepts",
     "tags": ["relevant", "existing", "tags"],
