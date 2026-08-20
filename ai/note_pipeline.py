@@ -7,7 +7,6 @@ from ai.note_writer import NoteWriter
 from ai.note_validator import NoteValidator
 from vault.vault import VaultManager
 
-
 console = Console()
 
 
@@ -30,24 +29,26 @@ class NotePipeline:
 
     def __init__(
         self,
-        llm_client,
+        llm_planner,
+        llm_writer,
+        llm_validator,
         vault_manager: VaultManager,
         max_revisions: int = 1,
     ):
-        self.llm = llm_client
+        #self.llm = llm_cliet
         self.vault = vault_manager
 
         self.planner = NotePlanner(
-            llama_client=llm_client,
+            llama_client=llm_planner,
             vault_manager=vault_manager,
         )
 
         self.writer = NoteWriter(
-            llama_client=llm_client,
+            llama_client=llm_writer,
         )
 
         self.validator = NoteValidator(
-            llama_client=llm_client,
+            llama_client=llm_validator,
         )
 
         # Intentionally cap revisions at a single pass.
