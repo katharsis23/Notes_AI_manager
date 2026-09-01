@@ -4,7 +4,7 @@ import json
 CONFIG_PATH = pathlib.Path.home() / ".config" / "obsidian-ai-note"
 CONFIG_FILE = "config.json"
 
-class Config:
+class NotesConfig:
     """
     Class to store all the constants and global vars
     """
@@ -13,9 +13,13 @@ class Config:
         model_name: str = "qwen2.5:14b",
         ollama_url: str = "http://localhost:11434/api/generate",
         note_vault: pathlib.Path = pathlib.Path.home() / "Documents" / "obsidian" / "conspects",
-        auto_git: bool = True
+        auto_git: bool = True,
+        model_planner: str = "llama3.2:3b",
+        model_validator: str = "qwen3:4b"
     ):
         self.model_name = model_name
+        self.model_planner = model_planner
+        self.model_validator = model_validator
         self.ollama_url = ollama_url
         self.note_vault = note_vault
         self.auto_git = auto_git
@@ -53,12 +57,24 @@ class Config:
         if not isinstance(config_data, dict):
             print("[bold red]Config file is malformed. Using default settings.[/bold red]")
             return cls()
+        note_options = config_data.get("notes", {})
 
-        model_name = config_data.get("model_name", "qwen2.5:14b")
-        ollama_url = config_data.get("ollama_url", "http://localhost:11434/api/generate")
-        note_vault_path = pathlib.Path(config_data.get("note_vault", str(pathlib.Path.home() / "Documents" / "obsidian" / "conspects")))
-        auto_git = config_data.get("auto_git", True)
-        return cls(model_name, ollama_url, note_vault_path, auto_git)
+        model_name = note_options.get("model_name", "qwen2.5:14b")
+        model_planner_note = note_options.get("model_planner_note", "llama3.2:3b")
+        model_validator_note = note_options.get("model_validator_note", "qwen3:4b")
+
+        ollama_url = note_options.get("ollama_url", "http://localhost:11434/api/generate")
+        note_vault_path = pathlib.Path(note_options.get("note_vault", str(pathlib.Path.home() / "Documents" / "obsidian" / "conspects")))
+        auto_git = note_options.get("auto_git", True)
+        return cls(model_name, ollama_url, note_vault_path, auto_git, model_planner_note, model_validator_note)
 
 
-config = Config.from_dict()
+note_config = NotesConfig.from_dict()
+
+
+class Config:
+    def __init__(self, note_config: NotesConfig):
+        self.note_config = note_config
+
+
+config = Config(note_config=note_config)

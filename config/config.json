@@ -1,7 +1,11 @@
 
 {
-  "model_name": "qwen2.5:14b",
-  "ollama_url": "http://localhost:11434/api/generate",
-  "note_vault": "/home/daniel/Documents/obsidian/conspects",
-  "auto_git": true
+  "notes": {
+    "model_name": "qwen2.5:14b",
+    "ollama_url": "http://localhost:11434/api/generate",
+    "note_vault": "/home/daniel/Documents/obsidian/conspects",
+    "auto_git": true,
+    "model_planner_note":"llama3.2:3b",
+    "model_validator_note":"qwen3:4b"
+  }
 }
