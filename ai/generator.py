@@ -36,7 +36,7 @@ EXISTING VAULT TAGS:
 EXISTING VAULT FILES:
 {json.dumps(existing_files, ensure_ascii=False)}
 
-The final note will be written in Ukrainian.
+The final note will be written in English.
 
 ## PRIMARY GOAL
 
@@ -155,7 +155,7 @@ Do NOT generate Mermaid code.
 Return STRICTLY valid JSON and nothing else:
 
 {{
-    "title": "Clear and descriptive Ukrainian title",
+    "title": "Clear and descriptive title",
     "type": "reference",
     "folder": "Concepts",
     "tags": ["relevant", "tags"],
@@ -255,7 +255,7 @@ You are an expert technical writer and knowledge-base architect.
 
 Write a deep, information-dense Markdown note for an Obsidian knowledge base.
 
-The final note MUST be written in Ukrainian.
+The final note MUST be written in English.
 
 TOPIC:
 "{topic}"

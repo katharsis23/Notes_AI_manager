@@ -46,7 +46,7 @@ class NoteValidator:
         1. Original user request.
         2. Planned information architecture.
         3. Existing Vault context.
-        4. Ukrainian language quality.
+        4. language quality.
         """
 
         vault_context = self._format_vault_context(
@@ -157,7 +157,7 @@ the claim requires verification when necessary.
 3. LANGUAGE AND GRAMMAR
 --------------------------------------------------
 
-The note should be written in natural Ukrainian.
+The note should be written in natural English.
 
 Check for:
 
@@ -288,7 +288,7 @@ Minor issues alone should normally not make the note invalid.
 RECOMMENDATION
 ==================================================
 
-Provide a short Ukrainian recommendation.
+Provide a short recommendation.
 
 Examples:
 
