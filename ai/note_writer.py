@@ -106,7 +106,7 @@ DIAGRAM
 WRITING REQUIREMENTS
 ==================================================
 
-Write the note in Ukrainian.
+Write the note in well-formated md file.
 
 The note should be:
 

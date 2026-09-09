@@ -1,7 +1,10 @@
-
 {
-  "model_name": "qwen2.5:14b",
-  "ollama_url": "http://localhost:11434/api/generate",
-  "note_vault": "/home/daniel/Documents/obsidian/conspects",
-  "auto_git": true
+  "notes": {
+    "model_name": "mistral-nemo:12b-instruct-2407-q4_0",
+    "ollama_url": "http://host.docker.internal:11434/api/generate",
+    "note_vault": "/vault",
+    "auto_git": false,
+    "model_planner_note": "hermes3:8b",
+    "model_validator_note": "gemma2:2b"
+  }
 }

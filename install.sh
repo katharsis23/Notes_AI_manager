@@ -92,10 +92,14 @@ fi
 
 cat <<EOF > "$CONFIG_FILE"
 {
-  "model_name": "$CHOSEN_MODEL",
-  "ollama_url": "$OLLAMA_URL/api/generate",
-  "note_vault": "$CHOSEN_VAULT",
-  "auto_git": $AUTO_GIT
+    "notes": {
+        "model_name": "$CHOSEN_MODEL",
+        "ollama_url": "$OLLAMA_URL/api/generate",
+        "note_vault": "$CHOSEN_VAULT",
+        "auto_git": $AUTO_GIT,  
+        "model_planner_note":"llama3.2:3b",
+        "model_validator_note":"qwen3:4b"
+  }
 }
 EOF
 echo "✔ Saving configuration $CONFIG_FILE"

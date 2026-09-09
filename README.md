@@ -73,15 +73,16 @@ The model can be changed during installation/configuration.
 # Installation
 
 The project provides an interactive installation script.
+## Manual
 
-## 1. Prepare the repository
+### 1. Prepare the repository
 
 ```bash
 git clone <your-repo-url> ~/note
 cd ~/note
 ```
 
-## 2. Run the installer
+### 2. Run the installer
 
 ```bash
 chmod +x install.sh
@@ -108,7 +109,7 @@ The installer:
 
 9. Registers the `note` command for Fish, Bash or Zsh.
 
-## 3. Reload your shell
+### 3. Reload your shell
 
 For Bash:
 
@@ -127,6 +128,33 @@ Fish:
 ```bash
 source ~/.config/fish/functions/note.fish
 ```
+
+## Via Docker 
+
+> !IMPORTANT: Auto Git is not supported with Docker
+
+### 1. Add bashsrc or zshrc alias
+```bash
+note() {
+      docker run --rm -it \
+            --add-host=host.docker.internal:host-gateway \
+            -v (pwd)/config/config.json:/home/note_manager/.config/obsidian-ai-note/config.json:ro \
+            -v ~/Documents/obsidian/conspects:/vault:rw \
+            obsidian-ai-app "gRPC vs RESTapi"
+      obsidian-ai-app "$@"
+}
+```
+
+>!CHANGE the output and config pathes that matches yours
+
+### 2. Restart the shell
+```source ~/.bashrc```
+
+### 3. Build container (once)
+```docker build -t obsidian-ai-app .```
+
+
+## Nix Supremacy supported !!!
 
 ---
 
