@@ -2,7 +2,12 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    JsonConfigSettingsSource,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 
 CONFIG_DIR = Path.home() / ".config" / "obsidian-ai-note"
@@ -38,7 +43,7 @@ class NotesSettings(BaseModel):
     model_planner: str = "llama3.2:3b"
     model_validator: str = "qwen3:4b"
 
-    ollama_url: str = "http://localhost:11434/api/generate"
+    ollama_url: str = "http://0.0.0.0:11434/api/generate"
 
     note_vault: Path = Field(
         default_factory=lambda: (
@@ -101,7 +106,7 @@ class DevToolsSettings(BaseModel):
     enable_ai_judge: bool = False
 
 
-class Settings(BaseSettings):
+class Config(BaseSettings):
     """Application settings."""
 
     model_config = SettingsConfigDict(
@@ -116,5 +121,21 @@ class Settings(BaseSettings):
     whisper: WhisperSettings = Field(default_factory=WhisperSettings)
     dev_tools: DevToolsSettings = Field(default_factory=DevToolsSettings)
 
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+            JsonConfigSettingsSource(settings_cls),
+        )
 
-settings = Settings()
+config = Config()

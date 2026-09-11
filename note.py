@@ -40,11 +40,11 @@ async def main():
     )
 
     console.print(
-        f"Vault: [yellow]{config.note_config.note_vault}[/yellow]"
+        f"Vault: [yellow]{config.notes.note_vault}[/yellow]"
     )
 
     console.print(
-        f"Model: [yellow]{config.note_config.model_name}[/yellow]"
+        f"Model: [yellow]{config.notes.model_name}[/yellow]"
     )
 
     # ----------------------------------------------------------
@@ -52,30 +52,30 @@ async def main():
     # ----------------------------------------------------------
 
     vault_manager = VaultManager(
-        vault_path=config.note_config.note_vault,
-        auto_git=config.note_config.auto_git,
+        vault_path=config.notes.note_vault,
+        auto_git=config.notes.auto_git,
     )
 
     # llm_client = OllamaClient(
     #     url=config.ollama_url,
     #     model_name=config.model_name,
     # )
-    model_planner = config.note_config.model_planner
-    model_writer = config.note_config.model_name
-    model_validator = config.note_config.model_validator
+    model_planner = config.notes.model_planner
+    model_writer = config.notes.model_name
+    model_validator = config.notes.model_validator
 
     llm_planner = OllamaClient(
-        url = config.note_config.ollama_url,
+        url = config.notes.ollama_url,
         model_name=model_planner
     )
 
     llm_writer = OllamaClient(
-        url = config.note_config.ollama_url,
+        url = config.notes.ollama_url,
         model_name=model_writer
     )
 
     llm_validator = OllamaClient(
-        url = config.note_config.ollama_url,
+        url = config.notes.ollama_url,
         model_name=model_validator
     )
     # ----------------------------------------------------------
