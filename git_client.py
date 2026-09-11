@@ -1,5 +1,6 @@
-import subprocess
 import pathlib
+import subprocess
+
 from rich.console import Console
 
 console = Console()

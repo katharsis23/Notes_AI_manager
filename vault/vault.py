@@ -3,9 +3,10 @@ import os
 import pathlib
 import re
 
+from rich.console import Console
+
 from git_client import GitClient
 from models.note_models import VaultContext, VaultNote
-from rich.console import Console
 from vault.vault_indexer import VaultIndexer
 
 console = Console()
@@ -71,7 +72,6 @@ class VaultManager:
                 try:
                     with open(
                         file_path,
-                        "r",
                         encoding="utf-8",
                         errors="ignore",
                     ) as f:

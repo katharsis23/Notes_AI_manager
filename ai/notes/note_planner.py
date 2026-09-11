@@ -2,8 +2,14 @@
 import json
 
 from ai.notes.llm import OllamaClient
+from models.note_models import (
+    DiagramPlan,
+    NotePlan,
+    NoteSection,
+    VaultContext,
+    VaultNote,
+)
 from vault.vault import VaultManager
-from models.note_models import NotePlan, NoteSection, DiagramPlan, VaultContext, VaultNote
 
 
 class NotePlanner:
@@ -503,5 +509,5 @@ Return ONLY valid JSON.
             )
             if len(token) > 2
         }
-    
+
 

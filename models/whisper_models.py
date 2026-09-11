@@ -1,16 +1,17 @@
+from typing import Any
+
 from pydantic import BaseModel
-from typing import Any, Optional, Dict
-from pathlib import Path
+
 
 class WhisperRawResponse(BaseModel):
     text: str
-    additional_info: Dict[str, Any]
+    additional_info: dict[str, Any]
 
 class WhisperAgentCall(BaseModel):
     # Input data format
     # File: from pre-recorded file
     # Live: Live recording
-    file: Optional[str]
+    file: str | None
     live: bool=False
     # Dev Tools
     streaming: bool = False

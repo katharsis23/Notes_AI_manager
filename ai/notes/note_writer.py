@@ -1,5 +1,5 @@
-from models.note_models import NotePlan, VaultContext
 from ai.notes.llm import OllamaClient
+from models.note_models import NotePlan, VaultContext
 
 
 class NoteWriter:

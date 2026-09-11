@@ -1,11 +1,12 @@
+import json
+
+from ai.notes.llm import OllamaClient
 from models.note_models import (
     NotePlan,
     ValidationIssue,
     ValidationResult,
     VaultContext,
 )
-from ai.notes.llm import OllamaClient
-import json
 
 
 class NoteValidator:

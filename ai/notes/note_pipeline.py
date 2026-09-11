@@ -3,8 +3,8 @@ import time
 from rich.console import Console
 
 from ai.notes.note_planner import NotePlanner
-from ai.notes.note_writer import NoteWriter
 from ai.notes.note_validator import NoteValidator
+from ai.notes.note_writer import NoteWriter
 from vault.vault import VaultManager
 
 console = Console()
@@ -110,7 +110,7 @@ class NotePipeline:
 
         context = self.vault.get_existing_context_v2()
 
-        context_time = self._log_duration(
+        self._log_duration(
             "Vault context",
             stage_started,
         )

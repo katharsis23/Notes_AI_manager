@@ -9,7 +9,6 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-
 CONFIG_DIR = Path.home() / ".config" / "obsidian-ai-note"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 

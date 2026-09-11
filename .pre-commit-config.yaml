@@ -1,0 +1,38 @@
+# Pre-commit hooks.
+#
+# Nix note:
+#   These hooks use `language: system`, i.e. they call the executable on PATH
+#   rather than letting pre-commit create an isolated (and on NixOS often
+#   broken) virtualenv. Therefore `ruff` must be reachable from the shell in
+#   which you run `pre-commit`. Options:
+#     * enter the Nix devShell  -> nix develop   (ruff is provided)
+#     * or activate the local venv and `pip install ruff`
+#
+#   Run `pre-commit install` once to wire the hook into .git/hooks.
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (lint)
+        entry: ruff check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: pytest-fast
+        name: pytest (fast subset)
+        # Only the deterministic unit tests run on commit, to keep the hook
+        # quick. The full suite (with flaky retries) runs in CI.
+        entry: pytest -q -p no:cacheprovider -m "not integration and not slow" tests
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]

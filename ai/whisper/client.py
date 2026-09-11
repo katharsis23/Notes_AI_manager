@@ -1,8 +1,8 @@
-import faster_whisper
-from config.config import config
 import asyncio
-from functools import wraps
-from models.whisper_models import WhisperAgentCall, WhisperRawResponse
+
+from config.config import config
+from models.whisper_models import WhisperRawResponse
+
 
 class WhisperClient:
     """A low level abstract class that calls Whisper"""
@@ -27,7 +27,10 @@ class WhisperClient:
             additional_info=...
         )
 
-    async def transcribe(self, **kwargs) -> str:
+    async def transcribe_stream(self, **kwargs) -> str:
+        """Streaming transcription (not implemented yet)."""
         # Maybe we will use it in case we want to stream audio real-time
-        pass
+        raise NotImplementedError(
+            "Streaming transcription is not implemented yet."
+        )
 

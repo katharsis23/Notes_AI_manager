@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
-import asyncio
 import argparse
+import asyncio
 
 from rich.console import Console
 
-from config.config import config
-from vault.vault import VaultManager
 from ai.notes.llm import OllamaClient
 from ai.notes.note_pipeline import NotePipeline
-
+from config.config import config
+from vault.vault import VaultManager
 
 console = Console()
 

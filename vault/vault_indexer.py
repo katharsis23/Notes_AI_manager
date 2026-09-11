@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from models.note_models import NoteContent, NoteLink, NoteMetadata, NoteTag, Tag
+from models.note_models import NoteContent, NoteMetadata, Tag
 
 
 class VaultIndexer:
@@ -872,7 +872,7 @@ class VaultIndexer:
                 source_note_id=source_id,
                 wikilinks=wikilinks,
             )
-    
+
     # ============================================================
     # HASHING
     # ============================================================

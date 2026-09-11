@@ -13,14 +13,14 @@ Decorators
 
 """
 import functools
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, Callable, Any, Dict
-import time
-import logging
-from ai.notes.llm import OllamaClient
 import inspect
-from models.dev_models import QualityJudgement
+import logging
+import time
+from collections.abc import Callable
+from typing import Any
 
+from ai.notes.llm import OllamaClient
+from models.dev_models import QualityJudgement
 
 logger = logging.getLogger(__name__)
 
