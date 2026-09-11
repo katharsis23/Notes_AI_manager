@@ -1,5 +1,7 @@
 import pathlib
 import json
+import faster_whisper
+from typing import Literal
 
 CONFIG_PATH = pathlib.Path.home() / ".config" / "obsidian-ai-note"
 CONFIG_FILE = "config.json"
@@ -71,10 +73,73 @@ class NotesConfig:
 
 note_config = NotesConfig.from_dict()
 
+class WhisperConfig:
+    def __init__(
+            # Needs to add Precise Literal for type safety
+            self,
+            model_size: str = "turbo",
+            device: str = "cuda",
+            compute_type: str = "float16"
+    ):
+        if not self.check_type(model_size, device, compute_type):
+            raise ValueError("Invalid configuration for Whisper model")
+        self.model_size = model_size
+        self.device = device
+        self.compute_type = compute_type
+        self.model = faster_whisper.WhisperModel(model_size, device=device, compute_type=compute_type)
+
+    @staticmethod
+    def check_type(model_size: str, device: str, compute_type: str) -> bool:
+        valid_model_sizes: tuple[Literal["tiny", "base", "small", "medium", "large-v1", "large-v2", "large-v3", "turbo"]] = [
+            "tiny", "base", "small", "medium", "large-v1", "large-v2", "large-v3", "turbo"
+        ]
+        valid_devices: tuple[Literal["cpu", "cuda"]] = ("cpu", "cuda")
+        valid_compute_types: tuple[Literal["int8_float16", "int8_int8", "float16"]] = ("int8_float16", "int8_int8", "float16")
+
+        if model_size not in valid_model_sizes:
+            raise ValueError(f"Invalid model size: {model_size}. Valid options are: {valid_model_sizes}")
+        if device not in valid_devices:
+            raise ValueError(f"Invalid device: {device}. Valid options are: {valid_devices}")
+        if compute_type not in valid_compute_types:
+            raise ValueError(f"Invalid compute type: {compute_type}. Valid options are: {valid_compute_types}")
+        return True
+
+    @classmethod
+    def from_dict(cls):
+        file = CONFIG_PATH / CONFIG_FILE
+
+        if not file.exists():
+            print(f"[bold red]Config file does not exist at {file}. Using default settings.[/bold red]")
+            return cls()
+
+        with open(file, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+
+        # Ensure all required fields are present in the JSON
+        if not isinstance(config_data, dict):
+            print("[bold red]Config file is malformed. Using default settings.[/bold red]")
+            return cls()
+        # Whisper options are stored in config file under "whisper" key
+        whisper_options = config_data.get("whisper", {})
+
+        model_size = whisper_options.get("model_size", "turbo")
+        device = whisper_options.get("device", "cuda")
+        compute_type = whisper_options.get("compute_type", "float16")
+
+        return cls(model_size, device, compute_type)
+
+
+whisper_config = WhisperConfig.from_dict()
+
 
 class Config:
-    def __init__(self, note_config: NotesConfig):
+    def __init__(
+            self,
+            note_config: NotesConfig,
+            whisper_config: WhisperConfig
+    ):
         self.note_config = note_config
+        self.whisper_config = whisper_config
 
 
-config = Config(note_config=note_config)
+config = Config(note_config=note_config, whisper_config=whisper_config)

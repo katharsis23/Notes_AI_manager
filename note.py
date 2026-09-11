@@ -44,7 +44,7 @@ async def main():
     )
 
     console.print(
-        f"Модель: [yellow]{config.note_config.model_name}[/yellow]"
+        f"Model: [yellow]{config.note_config.model_name}[/yellow]"
     )
 
     # ----------------------------------------------------------
