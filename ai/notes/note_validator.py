@@ -1,10 +1,10 @@
-from models import (
+from models.note_models import (
     NotePlan,
     ValidationIssue,
     ValidationResult,
     VaultContext,
 )
-from ai.llm import OllamaClient
+from ai.notes.llm import OllamaClient
 import json
 
 

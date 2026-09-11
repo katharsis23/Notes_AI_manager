@@ -3,7 +3,7 @@
 """
 import json
 from rich.console import Console
-from ai.llm import OllamaClient
+from ai.notes.llm import OllamaClient
 
 console = Console()
 

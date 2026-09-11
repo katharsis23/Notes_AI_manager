@@ -1,16 +1,38 @@
-"""
-Dev tools to override, intercept and estimate data
+from typing import Literal
 
-Contracts
-- Benchmarks
-- Streaming
-- Logging
+from pydantic import BaseModel, Field
 
-Decorators
-- Time evaluation
-- Enable logging
-- Toggle streaming
 
-"""
+IssueSeverity = Literal[
+    "critical",
+    "major",
+    "minor",
+]
 
-# ========= Decorators =======
+IssueType = Literal[
+    "factual_error",
+    "contextual_error",
+    "user_request",
+    "grammar",
+    "terminology",
+    "structure",
+    "missing_content",
+    "wikilink",
+    "markdown",
+    "diagram",
+    "asr_hallucination",
+]
+
+
+class QualityIssue(BaseModel):
+    severity: IssueSeverity
+    type: IssueType
+    description: str
+    section: str | None = None
+
+
+class QualityJudgement(BaseModel):
+    valid: bool
+    score: float = Field(ge=0.0, le=10.0)
+    issues: list[QualityIssue] = Field(default_factory=list)
+    recommendation: str

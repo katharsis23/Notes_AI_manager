@@ -5,7 +5,17 @@
     "ollama_url": "http://localhost:11434/api/generate",
     "note_vault": "/home/daniel/Documents/obsidian/conspects",
     "auto_git": true,
-    "model_planner_note":"llama3.2:3b",
-    "model_validator_note":"qwen3:4b"
+    "model_planner":"llama3.2:3b",
+    "model_validator":"qwen3:4b"
+  },
+  "whisper": {
+    "model_size": "turbo",
+    "device": "cuda",
+    "compute_type": "float16"
+  },
+  "dev_tools": {
+    "enable_time_benchmark": false,
+    "enable_logging": false,
+    "enable_ai_judge": false
   }
 }
