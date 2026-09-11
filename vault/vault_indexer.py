@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from models import NoteContent, NoteLink, NoteMetadata, NoteTag, Tag
+from models.note_models import NoteContent, NoteLink, NoteMetadata, NoteTag, Tag
 
 
 class VaultIndexer:

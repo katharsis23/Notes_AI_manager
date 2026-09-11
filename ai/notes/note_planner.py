@@ -1,9 +1,9 @@
 
 import json
 
-from ai.llm import OllamaClient
+from ai.notes.llm import OllamaClient
 from vault.vault import VaultManager
-from models import NotePlan, NoteSection, DiagramPlan, VaultContext, VaultNote
+from models.note_models import NotePlan, NoteSection, DiagramPlan, VaultContext, VaultNote
 
 
 class NotePlanner:

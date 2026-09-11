@@ -2,9 +2,9 @@ import time
 
 from rich.console import Console
 
-from ai.note_planner import NotePlanner
-from ai.note_writer import NoteWriter
-from ai.note_validator import NoteValidator
+from ai.notes.note_planner import NotePlanner
+from ai.notes.note_writer import NoteWriter
+from ai.notes.note_validator import NoteValidator
 from vault.vault import VaultManager
 
 console = Console()

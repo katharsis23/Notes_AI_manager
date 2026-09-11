@@ -4,7 +4,7 @@ import pathlib
 import re
 
 from git_client import GitClient
-from models import VaultContext, VaultNote
+from models.note_models import VaultContext, VaultNote
 from rich.console import Console
 from vault.vault_indexer import VaultIndexer
 
