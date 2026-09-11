@@ -43,9 +43,7 @@ class NoteWriter:
             context,
         )
 
-        diagram_instruction = (
-            self._build_diagram_instruction(plan)
-        )
+        diagram_instruction = self._build_diagram_instruction(plan)
 
         prompt = f"""
 You are an expert technical writer and knowledge-base author
@@ -229,9 +227,7 @@ Start directly with:
             return result.strip()
 
         except Exception as exc:
-            print(
-                f"Writer error: {exc}"
-            )
+            print(f"Writer error: {exc}")
             return None
 
     @staticmethod
@@ -248,9 +244,7 @@ Start directly with:
             plan.outline,
             start=1,
         ):
-            elements = ", ".join(
-                section.elements
-            )
+            elements = ", ".join(section.elements)
 
             sections.append(
                 f"""
@@ -264,9 +258,7 @@ Required elements:
 """.strip()
             )
 
-        return "\n\n".join(
-            sections
-        )
+        return "\n\n".join(sections)
 
     @staticmethod
     def _format_related_notes(
@@ -281,15 +273,9 @@ Required elements:
         entire Vault.
         """
 
-        selected = set(
-            plan.backlinks
-        )
+        selected = set(plan.backlinks)
 
-        notes = [
-            note
-            for note in context.notes
-            if note.name in selected
-        ]
+        notes = [note for note in context.notes if note.name in selected]
 
         if not notes:
             return "No specifically related Vault notes were selected."
@@ -297,9 +283,7 @@ Required elements:
         result = []
 
         for note in notes:
-            tags = ", ".join(
-                note.tags
-            )
+            tags = ", ".join(note.tags)
 
             result.append(
                 f"""
@@ -310,9 +294,7 @@ Tags: {tags or "none"}
 """.strip()
             )
 
-        return "\n\n".join(
-            result
-        )
+        return "\n\n".join(result)
 
     @staticmethod
     def _build_diagram_instruction(
@@ -359,5 +341,3 @@ Do not repeat the entire note inside the diagram.
 The diagram should provide a useful visual representation of
 relationships, structure, flow, sequence, hierarchy, or architecture.
 """
-
-

@@ -50,13 +50,9 @@ class NoteValidator:
         4. language quality.
         """
 
-        vault_context = self._format_vault_context(
-            context
-        )
+        vault_context = self._format_vault_context(context)
 
-        plan_context = self._format_plan(
-            plan
-        )
+        plan_context = self._format_plan(plan)
 
         prompt = f"""
 You are a strict quality-control system for an Obsidian
@@ -359,14 +355,10 @@ Return ONLY JSON.
                 temperature=0.1,
             )
 
-            data = json.loads(
-                raw_result
-            )
+            data = json.loads(raw_result)
 
         except Exception as exc:
-            print(
-                f"Validator error: {exc}"
-            )
+            print(f"Validator error: {exc}")
             return None
 
         try:
@@ -408,9 +400,7 @@ Return ONLY JSON.
             TypeError,
             ValueError,
         ) as exc:
-            print(
-                f"Invalid ValidationResult returned by LLM: {exc}"
-            )
+            print(f"Invalid ValidationResult returned by LLM: {exc}")
             return None
 
     @staticmethod
@@ -493,6 +483,4 @@ Tags: {", ".join(note.tags) or "none"}
 """.strip()
             )
 
-        return "\n\n".join(
-            notes
-        )
+        return "\n\n".join(notes)

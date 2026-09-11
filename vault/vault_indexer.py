@@ -31,17 +31,11 @@ class VaultIndexer:
     DB_DIR_NAME = ".obsidian-ai"
     DB_FILE_NAME = "vault.db"
 
-    WIKILINK_RE = re.compile(
-        r"\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]"
-    )
+    WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]")
 
-    TAG_RE = re.compile(
-        r"(?<![\w-])#([A-Za-z0-9_/-]+)"
-    )
+    TAG_RE = re.compile(r"(?<![\w-])#([A-Za-z0-9_/-]+)")
 
-    FRONTMATTER_TAG_RE = re.compile(
-        r"^\s*-\s*([A-Za-z0-9_/-]+)\s*$"
-    )
+    FRONTMATTER_TAG_RE = re.compile(r"^\s*-\s*([A-Za-z0-9_/-]+)\s*$")
 
     FRONTMATTER_BOUNDARY = "---"
 
@@ -195,16 +189,12 @@ class VaultIndexer:
             return
 
         current_files = {
-            self._relative_path(path): path
-            for path in self._iter_markdown_files()
+            self._relative_path(path): path for path in self._iter_markdown_files()
         }
 
         with self._connect() as db:
             indexed_paths = {
-                row["path"]
-                for row in db.execute(
-                    "SELECT path FROM notes"
-                ).fetchall()
+                row["path"] for row in db.execute("SELECT path FROM notes").fetchall()
             }
 
             has_changes = False
@@ -231,11 +221,7 @@ class VaultIndexer:
                     path=path,
                     relative_path=relative_path,
                     file_hash=file_hash,
-                    existing_id=(
-                        existing["id"]
-                        if existing is not None
-                        else None
-                    ),
+                    existing_id=(existing["id"] if existing is not None else None),
                 )
 
             deleted_paths = indexed_paths - set(current_files)
@@ -308,9 +294,7 @@ class VaultIndexer:
             Programming/Python/AsyncIO.md
         """
 
-        return path.relative_to(
-            self.vault_path
-        ).as_posix()
+        return path.relative_to(self.vault_path).as_posix()
 
     # ============================================================
     # INDEXING
@@ -335,26 +319,18 @@ class VaultIndexer:
 
         frontmatter, body = self._parse_frontmatter(content)
 
-        note_id = (
-            existing_id
-            if existing_id is not None
-            else str(uuid4())
-        )
+        note_id = existing_id if existing_id is not None else str(uuid4())
 
         name = path.stem
 
-        folder = str(
-            Path(relative_path).parent
-        )
+        folder = str(Path(relative_path).parent)
 
         if folder == ".":
             folder = ""
 
         note_type = frontmatter.get("type")
 
-        modified_at = datetime.fromtimestamp(
-            path.stat().st_mtime
-        ).isoformat()
+        modified_at = datetime.fromtimestamp(path.stat().st_mtime).isoformat()
 
         metadata = NoteMetadata(
             id=UUID(note_id),
@@ -428,11 +404,7 @@ class VaultIndexer:
                 metadata.path,
                 metadata.folder,
                 metadata.type,
-                (
-                    metadata.modified_at.isoformat()
-                    if metadata.modified_at
-                    else None
-                ),
+                (metadata.modified_at.isoformat() if metadata.modified_at else None),
                 metadata.hash,
             ),
         )
@@ -527,9 +499,7 @@ class VaultIndexer:
                 current_key = key
 
                 if value:
-                    frontmatter[key] = (
-                        value.strip('"').strip("'")
-                    )
+                    frontmatter[key] = value.strip('"').strip("'")
                 else:
                     frontmatter[key] = []
 
@@ -545,13 +515,9 @@ class VaultIndexer:
                 ):
                     frontmatter[current_key] = []
 
-                frontmatter[current_key].append(
-                    value.strip('"').strip("'")
-                )
+                frontmatter[current_key].append(value.strip('"').strip("'"))
 
-        body = "\n".join(
-            lines[end_index + 1:]
-        )
+        body = "\n".join(lines[end_index + 1 :])
 
         return frontmatter, body
 
@@ -581,9 +547,7 @@ class VaultIndexer:
         )
 
         if isinstance(frontmatter_tags, str):
-            frontmatter_tags = [
-                frontmatter_tags
-            ]
+            frontmatter_tags = [frontmatter_tags]
 
         for tag in frontmatter_tags:
             normalized = self._normalize_tag(tag)
@@ -592,9 +556,7 @@ class VaultIndexer:
                 tags.add(normalized)
 
         for match in self.TAG_RE.finditer(content):
-            normalized = self._normalize_tag(
-                match.group(1)
-            )
+            normalized = self._normalize_tag(match.group(1))
 
             if normalized:
                 tags.add(normalized)
@@ -603,13 +565,7 @@ class VaultIndexer:
 
     @staticmethod
     def _normalize_tag(tag: str) -> str:
-        return (
-            str(tag)
-            .strip()
-            .lower()
-            .lstrip("#")
-            .replace("_", "-")
-        )
+        return str(tag).strip().lower().lstrip("#").replace("_", "-")
 
     def _replace_note_tags(
         self,
@@ -846,7 +802,6 @@ class VaultIndexer:
 
         return matches[0]["id"]
 
-
     def _resolve_links(self, db: sqlite3.Connection) -> None:
         """
         Re-evaluate all outgoing WikiLinks for indexed notes.
@@ -887,9 +842,7 @@ class VaultIndexer:
 
         digest = hashlib.sha256()
 
-        with path.open(
-            "rb"
-        ) as file:
+        with path.open("rb") as file:
             for chunk in iter(
                 lambda: file.read(1024 * 1024),
                 b"",
@@ -922,11 +875,7 @@ class VaultIndexer:
                 """
             ).fetchall()
 
-        return [
-            self._row_to_metadata(row)
-            for row in rows
-        ]
-
+        return [self._row_to_metadata(row) for row in rows]
 
     def get_note(
         self,
@@ -1065,10 +1014,7 @@ class VaultIndexer:
                 (str(note_id),),
             ).fetchall()
 
-        return [
-            self._row_to_metadata(row)
-            for row in rows
-        ]
+        return [self._row_to_metadata(row) for row in rows]
 
     def get_outgoing_links(
         self,
@@ -1098,10 +1044,7 @@ class VaultIndexer:
                 (str(note_id),),
             ).fetchall()
 
-        return [
-            self._row_to_metadata(row)
-            for row in rows
-        ]
+        return [self._row_to_metadata(row) for row in rows]
 
     # ============================================================
     # SEARCH
@@ -1147,10 +1090,7 @@ class VaultIndexer:
                 ),
             ).fetchall()
 
-        return [
-            self._row_to_metadata(row)
-            for row in rows
-        ]
+        return [self._row_to_metadata(row) for row in rows]
 
     # ============================================================
     # HELPERS
@@ -1163,9 +1103,7 @@ class VaultIndexer:
         modified_at = None
 
         if row["modified_at"]:
-            modified_at = datetime.fromisoformat(
-                row["modified_at"]
-            )
+            modified_at = datetime.fromisoformat(row["modified_at"])
 
         return NoteMetadata(
             id=UUID(row["id"]),

@@ -35,7 +35,7 @@ class NotePipeline:
         vault_manager: VaultManager,
         max_revisions: int = 1,
     ):
-        #self.llm = llm_cliet
+        # self.llm = llm_cliet
         self.vault = vault_manager
 
         self.planner = NotePlanner(
@@ -62,9 +62,7 @@ class NotePipeline:
     def _log_duration(stage: str, started_at: float) -> float:
         elapsed = time.perf_counter() - started_at
 
-        console.print(
-            f"  └─ [dim]{stage}: {elapsed:.2f}s[/dim]"
-        )
+        console.print(f"  └─ [dim]{stage}: {elapsed:.2f}s[/dim]")
 
         return elapsed
 
@@ -94,9 +92,7 @@ class NotePipeline:
     async def generate(self, raw_text: str):
         pipeline_started = time.perf_counter()
 
-        console.print(
-            "\n[bold blue]━━━ Note Generation Pipeline ━━━[/bold blue]"
-        )
+        console.print("\n[bold blue]━━━ Note Generation Pipeline ━━━[/bold blue]")
 
         # --------------------------------------------------------------
         # 1. Vault context
@@ -104,9 +100,7 @@ class NotePipeline:
 
         stage_started = time.perf_counter()
 
-        console.print(
-            "  ├─ [cyan]Fetching Vault context...[/cyan]"
-        )
+        console.print("  ├─ [cyan]Fetching Vault context...[/cyan]")
 
         context = self.vault.get_existing_context_v2()
 
@@ -116,8 +110,7 @@ class NotePipeline:
         )
 
         console.print(
-            f"  │  [dim]Notes: {len(context.notes)}, "
-            f"tags: {len(context.tags)}[/dim]"
+            f"  │  [dim]Notes: {len(context.notes)}, tags: {len(context.tags)}[/dim]"
         )
 
         # --------------------------------------------------------------
@@ -126,9 +119,7 @@ class NotePipeline:
 
         stage_started = time.perf_counter()
 
-        console.print(
-            "  ├─ [cyan]Building note plan...[/cyan]"
-        )
+        console.print("  ├─ [cyan]Building note plan...[/cyan]")
 
         plan = await self.planner.generate_plan(
             raw_text=raw_text,
@@ -140,9 +131,7 @@ class NotePipeline:
         )
 
         if not plan:
-            console.print(
-                "[bold red]✘ Planner failed to generate a plan.[/bold red]"
-            )
+            console.print("[bold red]✘ Planner failed to generate a plan.[/bold red]")
             return None
 
         # --------------------------------------------------------------
@@ -151,9 +140,7 @@ class NotePipeline:
 
         stage_started = time.perf_counter()
 
-        console.print(
-            "  ├─ [cyan]Generating note content...[/cyan]"
-        )
+        console.print("  ├─ [cyan]Generating note content...[/cyan]")
 
         content = await self.writer.generate_content(
             plan=plan,
@@ -166,9 +153,7 @@ class NotePipeline:
         )
 
         if not content:
-            console.print(
-                "[bold red]✘ Writer failed to generate content.[/bold red]"
-            )
+            console.print("[bold red]✘ Writer failed to generate content.[/bold red]")
             return None
 
         # --------------------------------------------------------------
@@ -177,9 +162,7 @@ class NotePipeline:
 
         stage_started = time.perf_counter()
 
-        console.print(
-            "  ├─ [cyan]Validating note...[/cyan]"
-        )
+        console.print("  ├─ [cyan]Validating note...[/cyan]")
 
         validation = await self.validator.validate(
             raw_text=raw_text,
@@ -194,9 +177,7 @@ class NotePipeline:
         )
 
         if validation is None:
-            console.print(
-                "[yellow]⚠ Validator returned no result.[/yellow]"
-            )
+            console.print("[yellow]⚠ Validator returned no result.[/yellow]")
         else:
             console.print(
                 f"  │  [dim]Score: "
@@ -218,9 +199,7 @@ class NotePipeline:
             revision_count += 1
 
             console.print(
-                "\n  ├─ [yellow]"
-                "Major issues detected → starting revision..."
-                "[/yellow]"
+                "\n  ├─ [yellow]Major issues detected → starting revision...[/yellow]"
             )
 
             stage_started = time.perf_counter()
@@ -243,9 +222,7 @@ class NotePipeline:
 
             stage_started = time.perf_counter()
 
-            console.print(
-                "  ├─ [cyan]Re-validating note...[/cyan]"
-            )
+            console.print("  ├─ [cyan]Re-validating note...[/cyan]")
 
             validation = await self.validator.validate(
                 raw_text=raw_text,
@@ -260,11 +237,7 @@ class NotePipeline:
             )
 
         elif validation:
-            console.print(
-                "  ├─ [green]"
-                "Revision not required."
-                "[/green]"
-            )
+            console.print("  ├─ [green]Revision not required.[/green]")
 
         # --------------------------------------------------------------
         # 7. Build result
@@ -272,22 +245,15 @@ class NotePipeline:
 
         total_time = time.perf_counter() - pipeline_started
 
-        console.print(
-            "\n[bold blue]━━━ Pipeline Summary ━━━[/bold blue]"
-        )
+        console.print("\n[bold blue]━━━ Pipeline Summary ━━━[/bold blue]")
 
-        console.print(
-            f"  Total: [yellow]{total_time:.2f}s[/yellow]"
-        )
+        console.print(f"  Total: [yellow]{total_time:.2f}s[/yellow]")
 
-        console.print(
-            f"  Revision count: [yellow]{revision_count}[/yellow]"
-        )
+        console.print(f"  Revision count: [yellow]{revision_count}[/yellow]")
 
         if validation:
             console.print(
-                f"  Validation score: "
-                f"[yellow]{validation.score:.2f}[/yellow]"
+                f"  Validation score: [yellow]{validation.score:.2f}[/yellow]"
             )
 
         return {
@@ -312,9 +278,7 @@ class NotePipeline:
 
         stage_started = time.perf_counter()
 
-        console.print(
-            "\n  └─ [cyan]Saving note to Vault...[/cyan]"
-        )
+        console.print("\n  └─ [cyan]Saving note to Vault...[/cyan]")
 
         note_path = self.vault.save_note(data)
 

@@ -59,22 +59,24 @@ async def test_generate_plan_missing_title_returns_none(
     vault_manager: VaultManager,
 ) -> None:
     payload = json.dumps({"outline": []})  # no title
-    planner = NotePlanner(llama_client=FakeLLMClient(payload), vault_manager=vault_manager)
+    planner = NotePlanner(
+        llama_client=FakeLLMClient(payload), vault_manager=vault_manager
+    )
     assert await planner.generate_plan("x") is None
 
 
 async def test_generate_plan_llm_error_returns_none(
     vault_manager: VaultManager,
 ) -> None:
-    planner = NotePlanner(
-        llama_client=ErrorLLMClient(), vault_manager=vault_manager
-    )
+    planner = NotePlanner(llama_client=ErrorLLMClient(), vault_manager=vault_manager)
     assert await planner.generate_plan("x") is None
 
 
 async def test_generate_plan_applies_defaults(vault_manager: VaultManager) -> None:
     payload = json.dumps({"title": "T"})
-    planner = NotePlanner(llama_client=FakeLLMClient(payload), vault_manager=vault_manager)
+    planner = NotePlanner(
+        llama_client=FakeLLMClient(payload), vault_manager=vault_manager
+    )
     plan = await planner.generate_plan("x")
     assert plan is not None
     assert plan.type == "reference"

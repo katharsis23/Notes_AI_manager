@@ -5,6 +5,7 @@ from rich.console import Console
 
 console = Console()
 
+
 class GitClient:
     """Git client for local storing"""
 
@@ -19,7 +20,7 @@ class GitClient:
                 cwd=self.vault_path,
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             return True, result.stdout.strip()
         except subprocess.CalledProcessError as e:
@@ -60,12 +61,16 @@ class GitClient:
             console.print(f"[bold red]Git commit error:[/bold red] {err}")
             return False
 
-        console.print(f"[bold green]✔ Git commit success:[/bold green] {commit_message}")
+        console.print(
+            f"[bold green]✔ Git commit success:[/bold green] {commit_message}"
+        )
 
         # 3. git push
         ok, err = self._run_git(["push"])
         if not ok:
-            console.print(f"[bold yellow]⚠ Git push failed (Check network or remote):[/bold yellow] {err}")
+            console.print(
+                f"[bold yellow]⚠ Git push failed (Check network or remote):[/bold yellow] {err}"
+            )
             return False
 
         console.print("[bold green]✔ Git push success![/bold green]")

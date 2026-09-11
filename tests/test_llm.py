@@ -113,8 +113,6 @@ async def test_query_raises_on_transport_error(
 
 
 async def test_custom_context_and_predict() -> None:
-    client = OllamaClient(
-        url="http://x", model_name="m", num_ctx=1024, num_predict=128
-    )
+    client = OllamaClient(url="http://x", model_name="m", num_ctx=1024, num_predict=128)
     assert client.num_ctx == 1024
     assert client.num_predict == 128

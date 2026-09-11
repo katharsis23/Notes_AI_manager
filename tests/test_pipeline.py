@@ -27,9 +27,7 @@ def _plan_json() -> str:
             "folder": "Concepts",
             "tags": ["python"],
             "backlinks": ["ExistingNote"],
-            "outline": [
-                {"title": "Loop", "purpose": "explain", "elements": ["def"]}
-            ],
+            "outline": [{"title": "Loop", "purpose": "explain", "elements": ["def"]}],
             "diagram": {"needed": False},
         }
     )
@@ -139,9 +137,7 @@ async def test_pipeline_major_issue_triggers_revision(
     green while the bug stays visible.
     """
     writer = FakeLLMClient(responses=["v1 content", "v2 content"])
-    validator = FakeLLMClient(
-        responses=[_validation_json("major"), _validation_json()]
-    )
+    validator = FakeLLMClient(responses=[_validation_json("major"), _validation_json()])
     pipeline = _make_pipeline(
         vault_manager, FakeLLMClient(_plan_json()), writer, validator
     )
@@ -196,9 +192,7 @@ def test_requires_revision_logic() -> None:
         return ValidationResult(
             valid=True,
             score=9.0,
-            issues=[
-                ValidationIssue(s, "grammar", "d") for s in severities
-            ],
+            issues=[ValidationIssue(s, "grammar", "d") for s in severities],
             recommendation="",
         )
 

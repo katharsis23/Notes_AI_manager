@@ -5,7 +5,6 @@ console = Console()
 
 
 class OllamaClient:
-
     def __init__(
         self,
         url: str,
@@ -39,7 +38,9 @@ class OllamaClient:
         if is_json:
             payload["format"] = "json"
 
-        console.print("\n[bold magenta]\u2501\u2501\u2501 Ollama Request \u2501\u2501\u2501[/bold magenta]")
+        console.print(
+            "\n[bold magenta]\u2501\u2501\u2501 Ollama Request \u2501\u2501\u2501[/bold magenta]"
+        )
         console.print(f"  Model:        [yellow]{self.model_name}[/yellow]")
         console.print(f"  URL:          [yellow]{self.url}[/yellow]")
         console.print(f"  JSON mode:    {is_json}")
@@ -48,10 +49,7 @@ class OllamaClient:
         console.print(f"  Max tokens:   {self.num_predict}")
         console.print(f"  Prompt chars: {len(prompt)}")
         console.print(f"  Prompt words: {len(prompt.split())}")
-        console.print(
-            f"  Prompt preview:\n"
-            f"[dim]{prompt[:1000]}[/dim]"
-        )
+        console.print(f"  Prompt preview:\n[dim]{prompt[:1000]}[/dim]")
 
         timeout_config = http.Timeout(
             600.0,
@@ -59,18 +57,13 @@ class OllamaClient:
         )
 
         try:
-            async with http.AsyncClient(
-                timeout=timeout_config
-            ) as client:
-
+            async with http.AsyncClient(timeout=timeout_config) as client:
                 response = await client.post(
                     url=self.url,
                     json=payload,
                 )
 
-                console.print(
-                    f"  HTTP status: [yellow]{response.status_code}[/yellow]"
-                )
+                console.print(f"  HTTP status: [yellow]{response.status_code}[/yellow]")
 
                 if response.status_code >= 400:
                     console.print(
@@ -87,20 +80,13 @@ class OllamaClient:
 
                 response_data = response.json()
 
-                console.print(
-                    f"  Response keys: {list(response_data.keys())}"
-                )
+                console.print(f"  Response keys: {list(response_data.keys())}")
 
                 result = response_data.get("response", "")
 
-                console.print(
-                    f"  Response chars: {len(result)}"
-                )
+                console.print(f"  Response chars: {len(result)}")
 
-                console.print(
-                    f"  Response preview:\n"
-                    f"[dim]{result[:1000]}[/dim]"
-                )
+                console.print(f"  Response preview:\n[dim]{result[:1000]}[/dim]")
 
                 console.print(
                     "[bold green]\u2714 Ollama request completed[/bold green]"
@@ -109,9 +95,7 @@ class OllamaClient:
                 return result
 
         except http.HTTPStatusError:
-            console.print(
-                "[bold red]\u2718 Ollama HTTP request failed[/bold red]"
-            )
+            console.print("[bold red]\u2718 Ollama HTTP request failed[/bold red]")
             raise
 
         except Exception as e:

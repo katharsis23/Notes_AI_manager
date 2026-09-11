@@ -78,7 +78,7 @@ def test_save_note_backlinks_single(manager: VaultManager) -> None:
     data = {"title": "T", "backlinks": ["NoteA"], "content": "x"}
     path = manager.save_note(data)
     assert path is not None
-    assert '[[NoteA]]' in path.read_text(encoding="utf-8")
+    assert "[[NoteA]]" in path.read_text(encoding="utf-8")
 
 
 def test_save_note_backlinks_multiple(manager: VaultManager) -> None:
