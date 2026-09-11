@@ -12,17 +12,19 @@ Decorators
 - Toggle streaming
 
 """
+
 import functools
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, Callable, Any, Dict
-import time
-import logging
-from ai.notes.llm import OllamaClient
 import inspect
+import logging
+import time
+from collections.abc import Callable
+from typing import Any
+
+from ai.notes.llm import OllamaClient
 from models.dev_models import QualityJudgement
 
-
 logger = logging.getLogger(__name__)
+
 
 # ========= Decorators =======
 def benchmark(func: Callable) -> Callable:
@@ -106,9 +108,11 @@ def log_calls(func: Callable) -> Callable:
 
     return sync_wrapper
 
+
 async def ai_quality_judgement(ollama_client: OllamaClient) -> Callable:
     def decorator(func: Callable) -> Callable:
         if inspect.iscoroutinefunction(func):
+
             @functools.wraps(func)
             async def async_wrapper(*args, **kwargs):
                 raw_result = await func(*args, **kwargs)
@@ -116,6 +120,7 @@ async def ai_quality_judgement(ollama_client: OllamaClient) -> Callable:
                     judgement = await _judge(ollama_client, raw_result)
                     logger.debug("Quality judgement: %s", judgement)
                 return raw_result
+
             return async_wrapper
 
         @functools.wraps(func)
@@ -124,6 +129,7 @@ async def ai_quality_judgement(ollama_client: OllamaClient) -> Callable:
             if isinstance(raw_result, str):
                 logger.debug("Sync func %s: skipping async AI judge", func.__name__)
             return raw_result
+
         return sync_wrapper
 
     return decorator
@@ -133,10 +139,6 @@ async def _judge(ollama_client: OllamaClient, raw_result: str) -> QualityJudgeme
     prompt = NOTE_JUDGE_PROMPT.format(raw_result=raw_result)
     response = await ollama_client.generate(prompt)  # або як у тебе
     return QualityJudgement.model_validate_json(response)
-
-
-
-
 
 
 # TODO: Consider adding transcript or else

@@ -3,9 +3,10 @@ import os
 import pathlib
 import re
 
+from rich.console import Console
+
 from git_client import GitClient
 from models.note_models import VaultContext, VaultNote
-from rich.console import Console
 from vault.vault_indexer import VaultIndexer
 
 console = Console()
@@ -71,7 +72,6 @@ class VaultManager:
                 try:
                     with open(
                         file_path,
-                        "r",
                         encoding="utf-8",
                         errors="ignore",
                     ) as f:
@@ -143,9 +143,7 @@ class VaultManager:
                 )
             )
 
-        vault_tags = sorted(
-            {tag.name for tag in self.indexer.get_tags()}
-        )
+        vault_tags = sorted({tag.name for tag in self.indexer.get_tags()})
 
         return VaultContext(
             notes=vault_notes,
@@ -177,10 +175,7 @@ class VaultManager:
             exist_ok=True,
         )
 
-        default_title = (
-            f"note_"
-            f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        )
+        default_title = f"note_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
         title = (data.get("title") or default_title).strip()
 
@@ -197,13 +192,7 @@ class VaultManager:
         clean_tags = {"ai-generated"}
 
         for tag in data.get("tags", []):
-            clean_tags.add(
-                str(tag)
-                .strip()
-                .lower()
-                .replace("_", "-")
-                .replace("#", "")
-            )
+            clean_tags.add(str(tag).strip().lower().replace("_", "-").replace("#", ""))
 
         yaml_tags = "\n".join(f"  - {tag}" for tag in clean_tags)
 

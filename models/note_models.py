@@ -2,11 +2,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID, uuid4
 
-#TODO: Migrate to pydantic
+# TODO: Migrate to pydantic
 
 # ============================================================
 # AI NOTE GENERATION
 # ============================================================
+
 
 @dataclass
 class NoteSection:
@@ -37,6 +38,7 @@ class NotePlan:
 # NOTE VALIDATION
 # ============================================================
 
+
 @dataclass
 class ValidationIssue:
     severity: str
@@ -56,6 +58,7 @@ class ValidationResult:
 # ============================================================
 # VAULT CONTEXT
 # ============================================================
+
 
 @dataclass
 class VaultNote:
@@ -86,6 +89,7 @@ class VaultContext:
 # ============================================================
 # SQLITE / VAULT INDEX
 # ============================================================
+
 
 @dataclass
 class NoteMetadata:

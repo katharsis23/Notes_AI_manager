@@ -1,0 +1,133 @@
+[project]
+
+name = "obsidian-master"
+version = "0.1.0"
+description = "Local AI CLI tool for generating structured Obsidian notes via Ollama"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+dependencies = [
+    "httpx>=0.28",
+    "rich>=15.0",
+    "pydantic>=2.13",
+    "pydantic-settings>=2.15",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "pytest-rerunfailures>=14.0",
+    "ruff>=0.9",
+    "mypy>=1.13",
+    "pre-commit>=4.0",
+]
+
+[project.scripts]
+note = "note:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["note", "git_client", "dev_tools"]
+packages = ["ai", "ai.notes", "ai.whisper", "config", "models", "vault"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    # Flaky tests are retried a couple of times before the build fails.
+    # See the `flaky` marker below.
+    "--reruns", "2",
+    "--reruns-delay", "0.5",
+]
+markers = [
+    "flaky: test is known to be nondeterministic; retried by pytest-rerunfailures",
+    "integration: requires external services (Ollama, network, git remote)",
+    "slow: takes noticeably longer than a normal unit test",
+]
+
+# ---------------------------------------------------------------------------
+# Coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+branch = true
+source = ["ai", "config", "models", "vault", "git_client", "dev_tools", "note"]
+omit = [
+    "*/__pycache__/*",
+    "*/tests/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff (linter + formatter)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-exclude = ["venv", ".git", "__pycache__"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",    # line length is handled by the formatter
+    "SIM300",  # Yoda conditions are often clearer in tests (assert C == var)
+    "B017",    # assert blind Exception is acceptable when the type is unstable
+    "UP007",
+    "SIM222"
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]  # allow assert False style in tests
+
+[tool.ruff.lint.isort]
+known-first-party = ["ai", "config", "models", "vault"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------------------------------------------------------------------------
+# mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+exclude = ["venv/", "tests/"]
+

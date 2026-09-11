@@ -1,9 +1,14 @@
-
 import json
 
 from ai.notes.llm import OllamaClient
+from models.note_models import (
+    DiagramPlan,
+    NotePlan,
+    NoteSection,
+    VaultContext,
+    VaultNote,
+)
 from vault.vault import VaultManager
-from models.note_models import NotePlan, NoteSection, DiagramPlan, VaultContext, VaultNote
 
 
 class NotePlanner:
@@ -45,9 +50,7 @@ class NotePlanner:
         # 1. Get current Vault context
         # ---------------------------------------------------------
 
-        vault_context = (
-            self.vault_manager.get_existing_context_v2()
-        )
+        vault_context = self.vault_manager.get_existing_context_v2()
 
         # ---------------------------------------------------------
         # 2. Select potentially related files
@@ -334,9 +337,7 @@ Return ONLY valid JSON.
             data = json.loads(raw_result)
 
         except Exception as exc:
-            print(
-                f"Planner error: {exc}"
-            )
+            print(f"Planner error: {exc}")
             return None
 
         # ---------------------------------------------------------
@@ -400,9 +401,7 @@ Return ONLY valid JSON.
             )
 
         except (KeyError, TypeError, ValueError) as exc:
-            print(
-                f"Invalid NotePlan returned by LLM: {exc}"
-            )
+            print(f"Invalid NotePlan returned by LLM: {exc}")
             return None
 
     def get_related_files(
@@ -421,51 +420,30 @@ Return ONLY valid JSON.
         without changing the planner pipeline.
         """
 
-        query_tokens = self._tokenize(
-            description
-        )
+        query_tokens = self._tokenize(description)
 
         if not query_tokens:
             return []
 
-        scored: list[
-            tuple[int, VaultNote]
-        ] = []
+        scored: list[tuple[int, VaultNote]] = []
 
         for note in context.notes:
             score = 0
 
-            name_tokens = self._tokenize(
-                note.name
-            )
+            name_tokens = self._tokenize(note.name)
 
-            path_tokens = self._tokenize(
-                note.path
-            )
+            path_tokens = self._tokenize(note.path)
 
-            tag_tokens = {
-                token
-                for tag in note.tags
-                for token in self._tokenize(tag)
-            }
+            tag_tokens = {token for tag in note.tags for token in self._tokenize(tag)}
 
             # Filename match
-            score += (
-                len(query_tokens & name_tokens)
-                * 5
-            )
+            score += len(query_tokens & name_tokens) * 5
 
             # Path match
-            score += (
-                len(query_tokens & path_tokens)
-                * 2
-            )
+            score += len(query_tokens & path_tokens) * 2
 
             # Tag match
-            score += (
-                len(query_tokens & tag_tokens)
-                * 3
-            )
+            score += len(query_tokens & tag_tokens) * 3
 
             if score > 0:
                 scored.append(
@@ -480,10 +458,7 @@ Return ONLY valid JSON.
             reverse=True,
         )
 
-        return [
-            note
-            for _, note in scored[:limit]
-        ]
+        return [note for _, note in scored[:limit]]
 
     @staticmethod
     def _tokenize(
@@ -495,13 +470,9 @@ Return ONLY valid JSON.
 
         return {
             token.lower()
-            for token in __import__(
-                "re"
-            ).findall(
+            for token in __import__("re").findall(
                 r"[a-zA-Zа-яА-ЯіїєґІЇЄҐ0-9]+",
                 text,
             )
             if len(token) > 2
         }
-    
-

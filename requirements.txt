@@ -20,6 +20,8 @@ onnxruntime==1.30.0
 packaging==26.3
 protobuf==7.36.1
 Pygments==2.21.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
 PyYAML==6.0.3
 rich==15.0.0
 tokenizers==0.23.2

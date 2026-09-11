@@ -1,2 +1,32 @@
 venv/
 **/__pycache__/**
+
+# Python caches / build artifacts
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# ruff
+.ruff_cache/
+
+# pytest
+.pytest_cache/
+pytestdebug.log
+
+# coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# invoke
+.invoke/
+

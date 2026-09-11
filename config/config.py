@@ -9,7 +9,6 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-
 CONFIG_DIR = Path.home() / ".config" / "obsidian-ai-note"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
@@ -46,12 +45,7 @@ class NotesSettings(BaseModel):
     ollama_url: str = "http://0.0.0.0:11434/api/generate"
 
     note_vault: Path = Field(
-        default_factory=lambda: (
-            Path.home()
-            / "Documents"
-            / "obsidian"
-            / "conspects"
-        )
+        default_factory=lambda: Path.home() / "Documents" / "obsidian" / "conspects"
     )
 
     auto_git: bool = True
@@ -137,5 +131,6 @@ class Config(BaseSettings):
             file_secret_settings,
             JsonConfigSettingsSource(settings_cls),
         )
+
 
 config = Config()
