@@ -5,9 +5,13 @@ from rich.console import Console
 from ai.notes.note_planner import NotePlanner
 from ai.notes.note_validator import NoteValidator
 from ai.notes.note_writer import NoteWriter
+from models.note_models import Source
 from vault.vault import VaultManager
 
 console = Console()
+
+# Tag applied to notes generated from a Whisper transcript.
+FROM_WHISPER_TAG = "from-whisper"
 
 
 class NotePipeline:
@@ -89,10 +93,30 @@ class NotePipeline:
     # Main pipeline
     # ------------------------------------------------------------------
 
-    async def generate(self, raw_text: str):
+    async def generate(self, raw_text: str | None = None, source: Source | None = None):
+        """
+        Run the full pipeline.
+
+        Two equivalent entry styles:
+
+        * Legacy: ``generate("PostgreSQL indexes")`` — pure topic mode.
+        * Source-aware: ``generate(source=Source(kind="transcript", ...))``.
+
+        If ``source`` is None it is derived from ``raw_text`` as a topic,
+        so existing callers keep working unchanged.
+        """
+        if source is None:
+            source = Source(kind="topic", text=raw_text or "")
+
+        # Backwards-compatible ``raw_text`` used by planner/validator prompts.
+        raw_text = source.text
+
         pipeline_started = time.perf_counter()
 
         console.print("\n[bold blue]━━━ Note Generation Pipeline ━━━[/bold blue]")
+
+        if source.is_transcript:
+            console.print("  ├─ [magenta]Source: Whisper transcript[/magenta]")
 
         # --------------------------------------------------------------
         # 1. Vault context
@@ -123,7 +147,12 @@ class NotePipeline:
 
         plan = await self.planner.generate_plan(
             raw_text=raw_text,
+            source=source,
         )
+
+        # Deterministic provenance tag: the model cannot drop it.
+        if plan and source.is_transcript and FROM_WHISPER_TAG not in plan.tags:
+            plan.tags.append(FROM_WHISPER_TAG)
 
         self._log_duration(
             "Planner",
@@ -145,6 +174,7 @@ class NotePipeline:
         content = await self.writer.generate_content(
             plan=plan,
             context=context,
+            source=source,
         )
 
         self._log_duration(
@@ -169,6 +199,7 @@ class NotePipeline:
             plan=plan,
             content=content,
             context=context,
+            source=source,
         )
 
         self._log_duration(
@@ -270,8 +301,10 @@ class NotePipeline:
     # Generate + save
     # ------------------------------------------------------------------
 
-    async def generate_and_save(self, raw_text: str):
-        data = await self.generate(raw_text)
+    async def generate_and_save(
+        self, raw_text: str | None = None, source: Source | None = None
+    ):
+        data = await self.generate(raw_text=raw_text, source=source)
 
         if not data:
             return None

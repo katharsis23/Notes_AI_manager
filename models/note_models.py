@@ -35,6 +35,43 @@ class NotePlan:
 
 
 # ============================================================
+# SOURCE MATERIAL
+# ============================================================
+
+
+@dataclass
+class Source:
+    """
+    Optional source material for note generation.
+
+    The pipeline is *topic-driven* by default:
+
+        Source(kind="topic", text="PostgreSQL indexes")
+
+    When a transcript is available (e.g. from Whisper) it becomes the
+    authoritative material the note must be derived from:
+
+        Source(
+            kind="transcript",
+            text="<raw transcript>",
+            language="uk",
+            instruction="Focus on the indexing strategy",
+        )
+
+    ``instruction`` is an optional steering hint from the user. It never
+    replaces ``text`` — it only guides how the source is turned into a note.
+    """
+
+    kind: str = "topic"  # "topic" | "transcript"
+    text: str = ""
+    language: str | None = None
+    instruction: str | None = None
+
+    @property
+    def is_transcript(self) -> bool:
+        return self.kind == "transcript"
+
+# ============================================================
 # NOTE VALIDATION
 # ============================================================
 
@@ -45,8 +82,6 @@ class ValidationIssue:
     type: str
     description: str
     section: str | None = None
-
-
 @dataclass
 class ValidationResult:
     valid: bool
@@ -58,8 +93,6 @@ class ValidationResult:
 # ============================================================
 # VAULT CONTEXT
 # ============================================================
-
-
 @dataclass
 class VaultNote:
     """
@@ -89,8 +122,6 @@ class VaultContext:
 # ============================================================
 # SQLITE / VAULT INDEX
 # ============================================================
-
-
 @dataclass
 class NoteMetadata:
     """
@@ -121,7 +152,6 @@ class NoteContent:
 
     Corresponds to the content part of the indexed note.
     """
-
     note_id: UUID
     content: str
 
@@ -145,7 +175,6 @@ class NoteTag:
 
     Corresponds to the `note_tags` table.
     """
-
     note_id: UUID
     tag_id: UUID
 
@@ -166,3 +195,4 @@ class NoteLink:
 
     source_note_id: UUID
     target_note_id: UUID
+

@@ -137,7 +137,7 @@ async def ai_quality_judgement(ollama_client: OllamaClient) -> Callable:
 
 async def _judge(ollama_client: OllamaClient, raw_result: str) -> QualityJudgement:
     prompt = NOTE_JUDGE_PROMPT.format(raw_result=raw_result)
-    response = await ollama_client.generate(prompt)  # або як у тебе
+    response = await ollama_client.query(prompt, is_json=True)
     return QualityJudgement.model_validate_json(response)
 
 

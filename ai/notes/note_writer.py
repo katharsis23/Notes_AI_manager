@@ -1,6 +1,5 @@
 from ai.notes.llm import OllamaClient
-from models.note_models import NotePlan, VaultContext
-
+from models.note_models import NotePlan, VaultContext, Source
 
 class NoteWriter:
     """
@@ -31,9 +30,14 @@ class NoteWriter:
         self,
         plan: NotePlan,
         context: VaultContext,
+        source: Source | None = None,
     ) -> str | None:
         """
         Generate complete Markdown body according to NotePlan.
+
+        When ``source`` is a transcript, the note is written FROM that source
+        (the raw transcript is embedded as SOURCE MATERIAL) rather than from
+        the model's own knowledge.
         """
 
         outline = self._format_outline(plan)
@@ -44,6 +48,15 @@ class NoteWriter:
         )
 
         diagram_instruction = self._build_diagram_instruction(plan)
+
+        source_section = self._format_source_section(source)
+
+        accuracy_rule = (
+            "Do NOT introduce any fact that is not supported by the "
+            "SOURCE MATERIAL above."
+            if source is not None and source.is_transcript
+            else "Do not invent facts beyond the topic."
+        )
 
         prompt = f"""
 You are an expert technical writer and knowledge-base author
@@ -157,6 +170,8 @@ Do not invent:
 - mathematical properties;
 - implementation details.
 
+{accuracy_rule}
+
 If a claim depends on context, make the assumption explicit.
 
 If there are multiple interpretations, distinguish them.
@@ -259,6 +274,42 @@ Required elements:
             )
 
         return "\n\n".join(sections)
+
+    @staticmethod
+    def _format_source_section(source: Source | None) -> str:
+        """
+        Render the SOURCE MATERIAL section for the writer prompt.
+
+        Returns an empty string in topic mode, so the prompt is identical to
+        the original behaviour when no transcript is involved.
+        """
+
+        if source is None or not source.is_transcript:
+            return ""
+
+        lines = [
+            "==================================================",
+            "SOURCE MATERIAL (TRANSCRIPT)",
+            "==================================================",
+            "",
+            "The note MUST be derived from the transcript below.",
+            "It is the authoritative source of truth.",
+            "Do NOT add facts that are not supported by it.",
+        ]
+        if source.language:
+            lines.append(f"Transcript language: {source.language}")
+        if source.instruction:
+            lines.append(
+                "Additional user instruction (steering only, does NOT "
+                f"replace the source): {source.instruction}"
+            )
+
+        body = "\n".join(lines)
+        body += "\n\n--- TRANSCRIPT START ---\n"
+        body += source.text.strip()
+        body += "\n--- TRANSCRIPT END ---\n\n"
+
+        return body
 
     @staticmethod
     def _format_related_notes(

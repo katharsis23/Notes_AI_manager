@@ -1,5 +1,6 @@
 """Tests for :class:`vault.vault_indexer.VaultIndexer`."""
 
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -129,9 +130,7 @@ def test_get_content_roundtrip(indexer: VaultIndexer) -> None:
     assert "Content here" in content.content
 
 
-def test_ignored_directories_are_skipped(
-    tmp_vault: Path, indexer: VaultIndexer
-) -> None:
+def test_ignored_directories_are_skipped(tmp_vault: Path, indexer: VaultIndexer) -> None:
     git_dir = tmp_vault / ".git"
     git_dir.mkdir()
     (git_dir / "hidden.md").write_text("# should be ignored\n", encoding="utf-8")
@@ -140,9 +139,7 @@ def test_ignored_directories_are_skipped(
     assert indexer.get_note(".git/hidden.md") is None
 
 
-def test_ambiguous_wikilink_not_resolved(
-    tmp_vault: Path, indexer: VaultIndexer
-) -> None:
+def test_ambiguous_wikilink_not_resolved(tmp_vault: Path, indexer: VaultIndexer) -> None:
     # Two notes with the same stem in different folders -> ambiguous link.
     (tmp_vault / "Concepts" / "Dup.md").write_text("# Dup A\n", encoding="utf-8")
     (tmp_vault / "Tech" / "Dup.md").write_text("# Dup B\n", encoding="utf-8")

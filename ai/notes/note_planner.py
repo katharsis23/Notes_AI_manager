@@ -5,6 +5,7 @@ from models.note_models import (
     DiagramPlan,
     NotePlan,
     NoteSection,
+    Source,
     VaultContext,
     VaultNote,
 )
@@ -39,12 +40,19 @@ class NotePlanner:
     async def generate_plan(
         self,
         raw_text: str,
+        source: Source | None = None,
     ) -> NotePlan | None:
         """
-        Generate a structured NotePlan from the user's topic.
+        Generate a structured NotePlan from the user's topic or source.
 
         The planner does not generate note content.
+
+        When ``source`` describes a transcript, the plan is derived FROM the
+        source text (its structure is extracted), instead of inventing a plan
+        about a bare topic.
         """
+        if source is None:
+            source = Source(kind="topic", text=raw_text)
 
         # ---------------------------------------------------------
         # 1. Get current Vault context
@@ -56,10 +64,31 @@ class NotePlanner:
         # 2. Select potentially related files
         # ---------------------------------------------------------
 
+        # For a transcript the raw text is huge; use the topic/instruction
+        # (or the first slice) for the cheap keyword pre-filter.
+        related_query = source.instruction or raw_text
+        if source.is_transcript and not source.instruction:
+            related_query = raw_text[:400]
+
         related_files = self.get_related_files(
-            raw_text,
+            related_query,
             vault_context,
         )
+
+        # ---------------------------------------------------------
+        # 2b. Build the source section for the prompt
+        # ---------------------------------------------------------
+
+        source_header, source_block = self._format_source(source)
+
+        if source.is_transcript:
+            outline_basis = (
+                "The outline MUST be extracted from the SOURCE TRANSCRIPT: "
+                "reflect its actual structure, arguments and content. Do not "
+                "invent sections that the transcript does not support."
+            )
+        else:
+            outline_basis = "The outline must be specific to the topic."
 
         # ---------------------------------------------------------
         # 3. Prepare compact context for LLM
@@ -97,10 +126,10 @@ Your task is to design its information architecture,
 metadata, relationships and content plan.
 
 ==================================================
-TOPIC
+{source_header}
 ==================================================
 
-"{raw_text}"
+{source_block}
 
 ==================================================
 EXISTING VAULT TAGS
@@ -168,7 +197,7 @@ OUTLINE
 
 Create 3-7 sections.
 
-The outline must be specific to the topic.
+{outline_basis}
 
 Do NOT use generic sections simply because they are
 common in articles.
@@ -403,6 +432,41 @@ Return ONLY valid JSON.
         except (KeyError, TypeError, ValueError) as exc:
             print(f"Invalid NotePlan returned by LLM: {exc}")
             return None
+
+    @staticmethod
+    def _format_source(source: Source) -> tuple[str, str]:
+        """
+        Return the (header, block) pair that describes the source in the prompt.
+
+        * topic      -> header "TOPIC", the topic string quoted.
+        * transcript -> header "SOURCE TRANSCRIPT", the transcript verbatim,
+                        plus an optional user instruction for steering.
+        """
+        if source.is_transcript:
+            header = "SOURCE TRANSCRIPT"
+
+            lines = [
+                "The note MUST be derived from the following transcript.",
+                "Treat it as the authoritative source material.",
+                "Do NOT invent facts that are not supported by it.",
+            ]
+            if source.language:
+                lines.append(f"Transcript language: {source.language}")
+            if source.instruction:
+                lines.append(
+                    "Additional user instruction (steering only, does NOT "
+                    f"replace the source): {source.instruction}"
+                )
+
+            block = "\n".join(lines) + "\n\n--- TRANSCRIPT START ---\n"
+            block += source.text.strip()
+            block += "\n--- TRANSCRIPT END ---"
+
+            return header, block
+
+        header = "TOPIC"
+        block = f'"{source.text}"'
+        return header, block
 
     def get_related_files(
         self,

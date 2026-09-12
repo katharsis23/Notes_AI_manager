@@ -3,6 +3,7 @@ import json
 from ai.notes.llm import OllamaClient
 from models.note_models import (
     NotePlan,
+    Source,
     ValidationIssue,
     ValidationResult,
     VaultContext,
@@ -40,15 +41,21 @@ class NoteValidator:
         plan: NotePlan,
         content: str,
         context: VaultContext,
+        source: Source | None = None,
     ) -> ValidationResult | None:
         """
         Validate generated note against:
 
-        1. Original user request.
+        1. The original user request / source material.
         2. Planned information architecture.
         3. Existing Vault context.
-        4. language quality.
+        4. Language quality.
         """
+
+        if source is None:
+            source = Source(kind="topic", text=raw_text or "")
+
+        request_header, request_block = self._format_request(source)
 
         vault_context = self._format_vault_context(context)
 
@@ -69,10 +76,10 @@ Do NOT generate a replacement.
 Find concrete problems and return them as structured JSON.
 
 ==================================================
-ORIGINAL USER REQUEST
+{request_header}
 ==================================================
 
-{raw_text}
+{request_block}
 
 ==================================================
 NOTE PLAN
@@ -402,6 +409,34 @@ Return ONLY JSON.
         ) as exc:
             print(f"Invalid ValidationResult returned by LLM: {exc}")
             return None
+
+    @staticmethod
+    def _format_request(source: Source) -> tuple[str, str]:
+        """
+        Build the (header, block) pair describing what is being validated.
+
+        * topic      -> "ORIGINAL USER REQUEST", the topic string.
+        * transcript -> "SOURCE TRANSCRIPT", the raw transcript, so the note
+                        can be checked for fidelity against its source.
+        """
+        if source.is_transcript:
+            header = "SOURCE TRANSCRIPT"
+            lines = [
+                "The note must faithfully represent this transcript.",
+                "Flag any claim in the note that the transcript does NOT support.",
+            ]
+            if source.language:
+                lines.append(f"Transcript language: {source.language}")
+            if source.instruction:
+                lines.append(
+                    f"Additional user instruction: {source.instruction}"
+                )
+            block = "\n".join(lines) + "\n\n--- TRANSCRIPT START ---\n"
+            block += source.text.strip()
+            block += "\n--- TRANSCRIPT END ---"
+            return header, block
+
+        return "ORIGINAL USER REQUEST", source.text
 
     @staticmethod
     def _format_plan(

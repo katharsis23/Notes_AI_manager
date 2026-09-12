@@ -29,6 +29,7 @@ WhisperDevice = Literal["cpu", "cuda"]
 WhisperComputeType = Literal[
     "int8_float16",
     "int8_int8",
+    "int8",
     "float16",
 ]
 
@@ -86,8 +87,23 @@ class WhisperSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     model_size: WhisperModelSize = "turbo"
-    device: WhisperDevice = "cuda"
-    compute_type: WhisperComputeType = "float16"
+    device: WhisperDevice = "cpu"
+
+    # CPU uses "int8"; GPU/CUDA uses "float16". The default is chosen for CPU.
+    compute_type: WhisperComputeType = "int8_float16"
+
+    # ISO-639-1 language code ("uk", "en", ...) or None for auto-detection.
+    # Always prefer an explicit language: auto-detect is unreliable, especially
+    # on accented or noisy speech. Ukrainian is the common case here.
+    language: str | None = "en"
+
+    # Anti-hallucination / robustness flags (all default to the "speech" profile):
+    # - vad_filter: drop silent/music/noise regions where Whisper invents text;
+    # - condition_on_previous_text: avoid getting "stuck" echoing prior output;
+    # - no_speech_threshold: skip segments with low speech probability.
+    vad_filter: bool = True
+    condition_on_previous_text: bool = False
+    no_speech_threshold: float = 0.6
 
 
 class DevToolsSettings(BaseModel):
@@ -134,3 +150,4 @@ class Config(BaseSettings):
 
 
 config = Config()
+
